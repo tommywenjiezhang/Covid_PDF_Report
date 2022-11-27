@@ -7,6 +7,8 @@ import os, sys
 import warnings
 import traceback
 
+import logging
+
 
 def get_pdf_path(folder_path,report_type, day_range):
     pdf_name = "{} {}Testing Report".format(day_range, report_type)
@@ -14,6 +16,8 @@ def get_pdf_path(folder_path,report_type, day_range):
     return pdf_path
 
 
+# Create a custom logger
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='file.log', encoding='utf-8', level=logging.DEBUG)
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
@@ -23,7 +27,6 @@ if __name__ == "__main__":
     elif __file__:
         application_path = os.path.dirname(__file__)
     email_path = os.path.join(application_path,email_list_path)
-
     # email_list = read_email_list(email_path)
     args = parse_args()
     tdb = Testingdb()
@@ -36,6 +39,7 @@ if __name__ == "__main__":
         else:
             end_date = datetime.strptime(args.start,"%m/%d/%Y") + timedelta(hours=23)
         if args.missing:
+            logging.info("Missing Report Ran {} - {}".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")))
             try:
                 from filedialog import open_files, showMessage
                 if not os.path.exists(os.path.join(main_dir(),"active_testing.xlsx")):
@@ -54,6 +58,7 @@ if __name__ == "__main__":
                 missingft.memo_body(memo_df).to_pdf(pdf_path).send_email(email_path,subject=subject)
                 # convert_pdf(pdf_path, report_html)
             except Exception as e:
+                logging.error("Missing Report No active testing error {}".format(e))
                 traceback.print_exc()
                 showMessage("error")
                 df = tdb.getMissingTests(start_date, end_date)
@@ -65,6 +70,7 @@ if __name__ == "__main__":
                 missingft.memo_body(None).to_pdf(pdf_path).send_email(email_path,subject=subject)
                 # convert_pdf(pdf_path, report_html)
         elif args.empID:
+                logging.info("Employee Report Ran {} - {}".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")))
                 subject = "{}-{} Employee Testing Report".format(start_date.strftime("%Y_%m_%d"), end_date.strftime("%Y_%m_%d"))
                 day_range = "{} - {}".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
                 pdf_path = get_pdf_path(folder_path, "Employee", day_range)
@@ -72,6 +78,7 @@ if __name__ == "__main__":
                 ef = EmployeeReportFormatter(emp_df, day_range)
                 ef.to_pdf(pdf_path)
         else:
+            logging.debug("Employee Report Ran {} - {}".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")))
             subject = "{}-{} Testing Report".format(start_date.strftime("%Y_%m_%d"), end_date.strftime("%Y_%m_%d"))
             day_range = "{} - {}".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
             pdf_path = get_pdf_path(folder_path, "Weekly", day_range)

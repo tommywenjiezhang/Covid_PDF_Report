@@ -6,6 +6,12 @@ from datetime import datetime, timedelta
 import numpy as np
 from nameparser import HumanName
 import difflib
+import logging
+import sqlalchemy as sa
+from sqlalchemy.sql import text
+from model import Testing
+from sqlalchemy.orm import sessionmaker
+
 # from sendEmail import send_email
 
 
@@ -18,14 +24,28 @@ def fuzzy_match(x, vect):
 
 class Testingdb():
     def __init__(self):
-        access_driver = [d for d in pyodbc.drivers() if "Access" in d]
-        # print(access_driver)
+        access_driver = [d for d in pyodbc.drivers() if "Access Driver" in d]
+        print(access_driver)
         home_dir = os.environ['USERPROFILE']
         self.dbPath = os.path.join(home_dir,"Desktop\Testingdb.accdb")
-        print(self.dbPath)
-        connection_str = r'Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + self.dbPath
-        print(connection_str)
-        self.conn = pyodbc.connect(connection_str)
+        connection_string = (
+            r'Driver={' + access_driver[0] + r'};'
+            r'DBQ=' + self.dbPath + r';'
+            r"ExtendedAnsiSQL=1;"
+        )
+        connection_url = sa.engine.URL.create(
+                "access+pyodbc",
+                query={"odbc_connect": connection_string}
+        )
+        try:
+            engine = sa.create_engine(connection_url)
+            self.conn = engine
+            Session = sessionmaker(bind=engine)
+            self.session = Session()
+            logging.debug("Database connection established, driver used{}".format(access_driver[0]))
+        except Exception as e:
+            logging.error("DATABASE CONNECTION NOT SUCCESSFUL")
+            logging.error(e)
 
     def getTodayStatsData(self):
         today_date = "#{}#".format(datetime.now().strftime("%Y-%m-%d"))
@@ -54,8 +74,29 @@ class Testingdb():
         combin_df = emp_df.merge(active_testing, how="inner",left_on="match_key", right_on="NAME")
         combin_df = combin_df[["empID","empName","TITLE","MEMO"]]
         return combin_df
+    
+    def _updatePosTesting(self, empIDs:str,timeTested:datetime, result:str):
+        for empID in empIDs:
+            statement = self.session.query(Testing).\
+                        filter(Testing.empID == empID, Testing.timeTested >= timeTested).\
+                        update({"result":result})
+            logging.debug("Update {} positive records".format(statement))
+            self.session.commit()
 
+    def _updateNegTesting(self,timeTested:datetime, result:str):
+        # for empID in empIDs:
+        statement = self.session.query(Testing).\
+                    filter(Testing.timeTested >= timeTested).\
+                    update({"result":result})
+        logging.debug("Update {} negative records".format(statement))
+        self.session.commit()
 
+    def updateTesting(self, timeTested:datetime, pos=[]):
+        self._updateNegTesting(timeTested, "N")
+        if len(pos) > 0:
+            self._updatePosTesting(pos,timeTested, "P")
+
+        
     def get_duplicated_employee(self):
         emp_qry = "select empID, empName from empList"
         df = pd.read_sql(emp_qry,self.conn)
@@ -115,7 +156,7 @@ class Testingdb():
         emp_df["timeTested"]= pd.to_datetime(emp_df["timeTested"])
         return emp_df
 
-
+    
     def getWeeklyStatsData(self, start_date:datetime, end_date:datetime):
         qry_start_date = "#{}#".format(start_date.strftime("%Y-%m-%d %H:%M:%S"))
         qry_end_date = "#{}#".format(end_date.strftime("%Y-%m-%d %H:%M:%S"))
@@ -177,9 +218,11 @@ if __name__ == "__main__":
     # t = Testingdb()
     # df  = t.getTodayStatsData()
     s = Testingdb()
-    df = s.get_duplicated_employee()
-    # print(df.loc[df["no test"] != 0].reset_index()["empName"].to_frame())
-    df.to_excel("duplicated_employee.xlsx", index=None)
+    # df = s.get_duplicated_employee()
+    # # print(df.loc[df["no test"] != 0].reset_index()["empName"].to_frame())
+    # df.to_excel("duplicated_employee.xlsx", index=None)
+    todayDate = datetime.strftime(datetime.now(), "%Y-%m-%d")
+    s.updateTesting(datetime.strptime("2021-01-01", "%Y-%m-%d"),["Z1","J2"])
 
 
     
