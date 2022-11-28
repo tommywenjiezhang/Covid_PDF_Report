@@ -1,3 +1,5 @@
+import sqlalchemy_access as sa_a
+import sqlalchemy_access.pyodbc as sa_a_pyodbc
 import pyodbc
 import os
 import pandas as pd
@@ -11,6 +13,7 @@ import sqlalchemy as sa
 from sqlalchemy.sql import text
 from model import Testing
 from sqlalchemy.orm import sessionmaker
+import traceback
 
 # from sendEmail import send_email
 
@@ -28,6 +31,7 @@ class Testingdb():
         print(access_driver)
         home_dir = os.environ['USERPROFILE']
         self.dbPath = os.path.join(home_dir,"Desktop\Testingdb.accdb")
+        db_path = os.path.abspath(self.dbPath)
         connection_string = (
             r'Driver={' + access_driver[0] + r'};'
             r'DBQ=' + self.dbPath + r';'
@@ -37,7 +41,10 @@ class Testingdb():
                 "access+pyodbc",
                 query={"odbc_connect": connection_string}
         )
+        print(connection_url)
+        
         try:
+
             engine = sa.create_engine(connection_url)
             self.conn = engine
             Session = sessionmaker(bind=engine)
@@ -45,7 +52,8 @@ class Testingdb():
             logging.debug("Database connection established, driver used{}".format(access_driver[0]))
         except Exception as e:
             logging.error("DATABASE CONNECTION NOT SUCCESSFUL")
-            logging.error(e)
+            logging.error(connection_url)
+            logging.error(e, exc_info=True)
 
     def getTodayStatsData(self):
         today_date = "#{}#".format(datetime.now().strftime("%Y-%m-%d"))
@@ -91,7 +99,8 @@ class Testingdb():
         logging.debug("Update {} negative records".format(statement))
         self.session.commit()
 
-    def updateTesting(self, timeTested:datetime, pos=[]):
+    def updateTesting(self, timeTested, pos=[]):
+        timeTested = datetime.strptime(timeTested, "%m/%d/%Y")
         self._updateNegTesting(timeTested, "N")
         if len(pos) > 0:
             self._updatePosTesting(pos,timeTested, "P")
@@ -222,7 +231,7 @@ if __name__ == "__main__":
     # # print(df.loc[df["no test"] != 0].reset_index()["empName"].to_frame())
     # df.to_excel("duplicated_employee.xlsx", index=None)
     todayDate = datetime.strftime(datetime.now(), "%Y-%m-%d")
-    s.updateTesting(datetime.strptime("2021-01-01", "%Y-%m-%d"),["Z1","J2"])
+    s.updateTesting("11/27/2022",["Z1","J2"])
 
 
     

@@ -1,0 +1,27 @@
+import argparse
+from db import Testingdb
+from datetime import datetime
+import logging
+
+
+def parse_args():
+  """
+  Parse input arguments
+  """
+  parser = argparse.ArgumentParser(description='enter the start and end date')
+  parser.add_argument('--update', action='store_true')
+  parser.add_argument('-l', '--list', help='delimited list input', type=str)
+  args = parser.parse_args()
+  return args
+
+
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='db.log', encoding='utf-8', level=logging.DEBUG)
+if __name__ == "__main__":
+  args = parse_args()
+  if args.list and len(args.list) > 0:
+    pos = [str(item)for item in args.list.split(',')]
+  else:
+    pos= []
+  tdb = Testingdb()
+  todaysDate = datetime.now().strftime("%m/%d/%Y")
+  tdb.updateTesting(todaysDate,pos)
