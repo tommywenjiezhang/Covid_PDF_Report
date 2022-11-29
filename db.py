@@ -27,14 +27,18 @@ def fuzzy_match(x, vect):
 
 class Testingdb():
     def __init__(self):
-        access_driver = [d for d in pyodbc.drivers() if "Access Driver" in d]
+        access_driver = r'Microsoft Access Driver (*.mdb, *.accdb)'
         print(access_driver)
         home_dir = os.environ['USERPROFILE']
         self.dbPath = os.path.join(home_dir,"Desktop\Testingdb.accdb")
+        
         db_path = os.path.abspath(self.dbPath)
+        if not os.path.exists(db_path):
+            print(db_path + "does not exist")
+        print(db_path)
         connection_string = (
-            r'Driver={' + access_driver[0] + r'};'
-            r'DBQ=' + self.dbPath + r';'
+            r'Driver={' + access_driver + r'};'
+            r'DBQ=' + db_path + r';'
             r"ExtendedAnsiSQL=1;"
         )
         connection_url = sa.engine.URL.create(
@@ -227,11 +231,11 @@ if __name__ == "__main__":
     # t = Testingdb()
     # df  = t.getTodayStatsData()
     s = Testingdb()
-    # df = s.get_duplicated_employee()
+    df = s.get_duplicated_employee()
     # # print(df.loc[df["no test"] != 0].reset_index()["empName"].to_frame())
-    # df.to_excel("duplicated_employee.xlsx", index=None)
-    todayDate = datetime.strftime(datetime.now(), "%Y-%m-%d")
-    s.updateTesting("11/27/2022",["Z1","J2"])
+    df.to_excel("duplicated_employee.xlsx", index=None)
+    most_common = s.get_most_common_visitor()
+    most_common.to_excel("most_common_visitor.xlsx", index=None)
 
 
     

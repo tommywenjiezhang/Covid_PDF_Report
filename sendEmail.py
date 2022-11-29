@@ -6,6 +6,7 @@ from email.mime.multipart import MIMEMultipart
 import traceback
 import os, sys
 from configparser import ConfigParser
+import logging
 
 #Read config.ini file
 
@@ -66,11 +67,11 @@ def send_email(receiver, attchment_path, subject, body):
         text = msg.as_string()
 
         server.sendmail(email,receiver,text)
-
+        logging.debug("Email sent: {}".format(email))
         # lastly quit the server
         server.quit()
     except Exception as ex:
-        traceback.print_exc()
+        logging.error(ex,  exc_info=True)
 
 if __name__ == "__main__":
     config_object = ConfigParser()

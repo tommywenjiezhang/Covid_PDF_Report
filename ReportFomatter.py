@@ -27,8 +27,10 @@ def split_emp_vist(df):
 
 def validate_df(df):
     df.loc[df["symptom"]==False, "symptom"] = "None"
+    df['DOB']= pd.to_datetime(df['DOB'])
     df['timeTested']= pd.to_datetime(df['timeTested'])
     df["Date Tested"]= df.timeTested.dt.strftime("%Y-%m-%d")
+    df['DOB'] = df['DOB'].dt.strftime("%Y-%m-%d")
     df["Time Tested"] = df.timeTested.dt.strftime('%H:%M %p')
     return df
 
