@@ -119,10 +119,30 @@ class DailyReportFormatter(BaseFormatter):
             return self.body
         else:
             self.df = validate_df(self.df)
-            record_table_html = split_emp_vist(self.df)
-            record_table_html = self._format_table(record_table_html)
+            record_table_html =  split_emp_vist(self.df)
+            positive_html = self._format_table(self.positive_test())
+            record_table_html = positive_html + self._format_table(record_table_html)
             self.body += record_table_html
             return record_table_html
+
+    def positive_test(self):
+        if self.df.empty:
+            return ""
+        else:
+            print(self.df["result"].value_counts())
+            positive_df = self.df.loc[self.df["result"].astype("str") =="P"]
+            if positive_df.empty:
+                return ""
+            else:
+                positive_df.index += 1
+                emp_col = ['empID', 'empName',"Time Tested","DOB","Date Tested", 'symptom', 'typeOfTest',"result"]
+                positive_df = positive_df[emp_col]
+                positive_df= positive_df.style.set_table_styles([{'selector': 'tr,td', 'props': [('font-size', '12pt'),('border-style','solid'),('border-width','1px')]}])
+                positive_df = positive_df.apply(highlight_pos_rows, axis= 1)
+                return "</br><h3>Positive Employees:</h3></br>" + positive_df.to_html()
+        
+            
+
     
 
 class WeeklyReportFormatter(BaseFormatter):
@@ -148,9 +168,25 @@ class WeeklyReportFormatter(BaseFormatter):
         else:
             self.df = validate_df(self.df)
             record_table_html = split_emp_vist(self.df)
-            record_table_html = self._format_table(record_table_html)
+            positve_html = self._format_table(self.positive_test())
+            record_table_html = positve_html + self._format_table(record_table_html)
             self.body += record_table_html
             return record_table_html
+
+    def positive_test(self):
+        if self.df.empty:
+            return ""
+        else:
+            positive_df = self.df.loc[self.df["result"].astype("str") =="P"]
+            if positive_df.empty:
+                return ""
+            else:
+                positive_df.index += 1
+                emp_col = ['empID', 'empName',"Time Tested","DOB","Date Tested", 'symptom', 'typeOfTest',"result"]
+                positive_df = positive_df[emp_col]
+                positive_df= positive_df.style.set_table_styles([{'selector': 'tr,td', 'props': [('font-size', '12pt'),('border-style','solid'),('border-width','1px')]}])
+                positive_df = positive_df.apply(highlight_pos_rows, axis= 1)
+                return "</br><h3>Positive Employees:</h3></br>" + positive_df.to_html()
 
 class MissingReportFormatter(BaseFormatter):
     def __init__(self, df, report_date=datetime.now().strftime("%Y-%m-%d")):
