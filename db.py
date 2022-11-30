@@ -53,7 +53,7 @@ class Testingdb():
             self.conn = engine
             Session = sessionmaker(bind=engine)
             self.session = Session()
-            logging.debug("Database connection established, driver used{}".format(access_driver[0]))
+            logging.debug("Database connection established, driver used{}".format(access_driver))
         except Exception as e:
             logging.error("DATABASE CONNECTION NOT SUCCESSFUL")
             logging.error(connection_url)
@@ -168,6 +168,30 @@ class Testingdb():
         emp_df["result"].fillna("N", inplace=True)
         emp_df["timeTested"]= pd.to_datetime(emp_df["timeTested"])
         return emp_df
+
+    def getEmpList(self):
+        emp_qry = "Select * from empList"
+        emp_df = pd.read_sql(emp_qry, self.conn)
+        return emp_df
+
+
+    def getCustomDayRange(self,date_lst):
+        min_date = min(date_lst)
+        max_date = max(date_lst)
+        print(min_date, max_date)
+        max_date += timedelta(hours=23)
+        empList_df = self.getEmpList()
+        date_str_lst = [datetime.strftime(c,"%m/%d/%Y") for c in date_lst]
+        weeklyTesting = self.getWeeklyStatsData(min_date, max_date)
+        empList_df["DOB"] = empList_df["DOB"].dt.strftime("%m/%d/%Y")
+        weeklyTesting["timeTested"] = weeklyTesting["timeTested"].dt.strftime("%m/%d/%Y")
+        weeklyTesting =  weeklyTesting.loc[weeklyTesting["timeTested"].isin(date_str_lst)]
+        weeklyTesting = weeklyTesting[["empID", "empName", "timeTested","typeOfTest", "result"]]
+        merge_df = empList_df.merge(weeklyTesting, how = "left", on = ["empID",  "empName"])
+        return merge_df
+
+
+
 
     
     def getWeeklyStatsData(self, start_date:datetime, end_date:datetime):
