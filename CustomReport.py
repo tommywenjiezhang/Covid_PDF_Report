@@ -1,5 +1,7 @@
 import pandas as pd
 from datetime import datetime
+import logging
+import argparse
 
 
 class CustomReportBase():
@@ -22,16 +24,33 @@ class TestsByDays(CustomReportBase):
     def _process(self):
         return self.pivot(["empID","empName","DOB"],["timeTested","typeOfTest","result"])
 
+    
+
     def export(self, output_path):
         table = self._process()
         table.to_excel(output_path)
-class TestsByDepartment(CustomReportBase)
 
+class TestsByDepartment(CustomReportBase):
+    pass
+
+def parse_args():
+  """
+  Parse input arguments
+  """
+  parser = argparse.ArgumentParser(description='dates')
+  parser.add_argument('-d', '--date', help='delimited list input', type=str)
+  args = parser.parse_args()
+  return args
+
+
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='db.log', encoding='utf-8', level=logging.DEBUG)
 
 if __name__ == "__main__":
     from db import Testingdb
     tdb = Testingdb()
-    day_range = ["11/24/2022", "11/26/2022", "11/28/2022"]
-    day_range = [datetime.strptime(c, "%m/%d/%Y") for c in day_range]
+    args = parse_args()
+    if args.date:
+        day_range = ["11/21/2022", "11/26/2022", "11/28/2022"]
+        day_range = [datetime.strptime(c, "%m/%d/%Y") for c in day_range]
     df = tdb.getCustomDayRange(day_range)
-    TestsByDays(df).pivot().export("TestsByDays.xlsx")
+    TestsByDays(df).export("TestsByDays.xlsx")
