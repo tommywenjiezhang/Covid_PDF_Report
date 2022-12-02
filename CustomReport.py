@@ -1,15 +1,17 @@
 import pandas as pd
 from datetime import datetime
-import logging
-import argparse
-
+import logging, argparse
+from helper import main_dir, makeFolder
+import os
+from ReportFomatter import SpecialReportFormatter
+import sys
 
 class CustomReportBase():
     def __init__(self,df):
         self.df = df
     def pivot(self, rows, columns):
         self.df = self.df.reset_index()
-        table = pd.pivot_table(self.df, index=rows, values = 'index',columns=columns,aggfunc= ['count'], \
+        table = pd.pivot_table(self.df, index=rows, values = 'index',columns=columns,aggfunc= ['count'], fill_value="", \
                           margins = True, margins_name='Total')
         return table
     def _process(self):
@@ -23,34 +25,58 @@ class TestsByDays(CustomReportBase):
         self.output = None
     def _process(self):
         return self.pivot(["empID","empName","DOB"],["timeTested","typeOfTest","result"])
-
+    def get_data(self):
+        return self._process()
     
-
+class TestsByDepartment(CustomReportBase):
+    def _process(self):
+        self.df = self.pivot(["empID","empName"],["timeTested","typeOfTest","result"])
+        return self.df
+    def get_data(self):
+        return self._process()
     def export(self, output_path):
         table = self._process()
         table.to_excel(output_path)
-
-class TestsByDepartment(CustomReportBase):
-    pass
 
 def parse_args():
   """
   Parse input arguments
   """
-  parser = argparse.ArgumentParser(description='dates')
-  parser.add_argument('-d', '--date', help='delimited list input', type=str)
+  parser = argparse.ArgumentParser(description='enter the start and end date')
+  parser.add_argument('-d', '--date', help='delimited date input', type=str)
+  parser.add_argument('-r', '--report_type', help='delimited date input', type=str)
   args = parser.parse_args()
   return args
 
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='db.log', encoding='utf-8', level=logging.DEBUG)
 
+
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='db.log', encoding='utf-8', level=logging.DEBUG)
 if __name__ == "__main__":
+  args = parse_args()
+  if args.date and len(args.date) > 0:
+    output_dir = os.path.join(main_dir(),makeFolder())
     from db import Testingdb
     tdb = Testingdb()
-    args = parse_args()
-    if args.date:
-        day_range = ["11/21/2022", "11/26/2022", "11/28/2022"]
-        day_range = [datetime.strptime(c, "%m/%d/%Y") for c in day_range]
+    day_range = [str(item).strip() for item in args.date.split(',')]
+
+    day_range = [datetime.strptime(c, "%m/%d/%Y") for c in day_range]
     df = tdb.getCustomDayRange(day_range)
-    TestsByDays(df).export("TestsByDays.xlsx")
+    if args.report_type:
+        if args.report_type == "EMP_BY_DAY":
+            day_condense_str = "_".join([d.strftime("%Y_%m_%d") for d in day_range])
+            export_path = os.path.join(output_dir, "COVID TESTING {}.xlsx".format(day_condense_str))
+            td = TestsByDays(df)
+            df = td.get_data()
+            sFormatter = SpecialReportFormatter(df,day_condense_str)
+            sFormatter.set_heading("BY EMPLOYEE")
+            email_list_path = "emailList.txt"
+            if getattr(sys, 'frozen', False):
+                application_path = os.path.dirname(sys.executable)
+            elif __file__:
+                application_path = os.path.dirname(__file__)
+            email_path = os.path.join(application_path,email_list_path)
+            sFormatter.to_pdf(os.path.join(output_dir, "COVID TESTING {}.pdf".format(day_condense_str))).send_email(email_path, subject ="COVID TESTING for{}".format(day_condense_str) )
+            sFormatter.to_csv(export_path)
+        
+

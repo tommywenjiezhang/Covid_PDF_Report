@@ -25,6 +25,20 @@ def split_emp_vist(df):
     combine_html = "<h3>Employee Testing:</h3></br>{}<h3>Visitor Testing:</h3></br>{}".format(emp_html,vist_html)
     return combine_html
 
+
+def split_emp_vist_csv(df):
+    emp_col = ['empID', 'empName',"Time Tested","DOB","Date Tested", 'symptom', 'typeOfTest',"result"]
+    vist_col = ["visitorName","visitorDOB", "Time Tested","Date Tested", "symptom", "typeOfTest", "result"]
+    emp_df = df[df["Category"]=="EMPLOYEE"][emp_col]
+    emp_df.index += 1
+    vist_df = df[df["Category"]=="VISITOR"][vist_col]
+    vist_df.index += 1
+    vist_df.rename(columns={'visitorName':'Visitor Name', 'visitorDOB':'DOB'},inplace=True)
+    emp_df= emp_df.style.set_table_styles([{'selector': 'tr,td', 'props': [('font-size', '12pt'),('border-style','solid'),('border-width','1px')]}])
+    emp_df = emp_df.apply(highlight_pos_rows, axis= 1)
+    return (emp_df,vist_df)
+
+
 def validate_df(df):
     df.loc[df["symptom"]==False, "symptom"] = "None"
     df['DOB']= pd.to_datetime(df['DOB'])
@@ -42,6 +56,8 @@ class BaseFormatter():
         self.heading = "<h1 style='text-align:center;'> Covid Testing Report for {} </h1><h3>Test Summary:</h3>".format(self.report_date)
         self.body = ""
         self.pdf_path = ""
+    def pivot(self):
+        pass
 
     def set_heading(self,type_of_report):
         self.heading = "<h1 style='text-align:center;'> {} Covid Testing Report for {} </h1><h3>Test Summary:</h3>".format(type_of_report,self.report_date)
@@ -57,7 +73,6 @@ class BaseFormatter():
                                 font-size: 1em;\
                                 font-family: sans-serif;\
                                 min-width: 400px;\
-                                box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);\
                                 width:100%;\
                                 "
         ths = soup.find_all("tr")
@@ -77,11 +92,14 @@ class BaseFormatter():
     def combine_html(self):
         return self.heading + self.summary() + self.detail_records() + "<br/><p> Auto-generated testing report for {} </p>".format(datetime.now().strftime("%m/%d/%Y %H:%M:%S"))
 
-    
+    def to_csv(self, output_path):
+        pass
+
 
     def to_pdf(self,pdf_path):
         self.pdf_path = pdf_path
-        convert_pdf(pdf_path, self.combine_html())
+        html = self.combine_html()
+        convert_pdf(pdf_path, html)
         os.startfile(pdf_path)
         return self
 
@@ -98,6 +116,12 @@ class BaseFormatter():
                 showMessage("internet")
 
 class DailyReportFormatter(BaseFormatter):
+    def pivot(self):
+        table = pd.pivot_table(self.df, values="timeTested",index=['Category',"result"], columns=['typeOfTest'],aggfunc= ['count'], \
+                            margins = True, margins_name='Total')
+        table.fillna(0, inplace=True)
+        table.columns.name = ""
+        return table
 
     def summary(self):
         if self.df.empty:
@@ -125,11 +149,21 @@ class DailyReportFormatter(BaseFormatter):
             self.body += record_table_html
             return record_table_html
 
+    def to_csv(self, output_path):
+        if not self.df.empty:
+            emp_df, vist_df = split_emp_vist_csv(self.df)
+            summary = self.pivot()
+            with pd.ExcelWriter(output_path,engine='xlsxwriter') as writer:
+                summary.to_excel(writer, sheet_name= "SUMMARY")
+                emp_df.to_excel(writer,sheet_name = "EMP_TESTING")
+                vist_df.to_excel(writer,sheet_name = "VISITOR_TESTING")
+
+        
+
     def positive_test(self):
         if self.df.empty:
             return ""
         else:
-            print(self.df["result"].value_counts())
             positive_df = self.df.loc[self.df["result"].astype("str") =="P"]
             if positive_df.empty:
                 return ""
@@ -142,10 +176,35 @@ class DailyReportFormatter(BaseFormatter):
                 return "</br><h3>Positive Employees:</h3></br>" + positive_df.to_html()
         
             
+class SpecialReportFormatter(BaseFormatter):
 
+    def summary(self):
+        return ""
+    def detail_records(self):
+        if self.df.empty:
+            self.body += """<h1>No Testing Records</h1>"""
+            return self.body
+        else:
+            self.df.columns.name = ""
+            table_html = self.df.to_html()
+            table_html = self._format_table(table_html)
+            return table_html
+            
+    def to_csv(self, output_path):
+        if not self.df.empty:
+            with pd.ExcelWriter(output_path,engine='xlsxwriter') as writer:
+                self.df.to_excel(writer, sheet_name= "SUMMARY")
+        
     
 
 class WeeklyReportFormatter(BaseFormatter):
+    def pivot(self):
+        table = pd.pivot_table(self.df, values='timeTested',index=['Category',"TestByDate", "result"], columns=['typeOfTest'],aggfunc= ['count'], \
+                            margins = True, margins_name='Total')
+        table.fillna(0, inplace=True)
+        table.columns.name = ""
+        return table
+
     def summary(self):
         if self.df.empty:
             self.body += """<h1>No Testing Records found</h1>"""
@@ -172,7 +231,16 @@ class WeeklyReportFormatter(BaseFormatter):
             record_table_html = positve_html + self._format_table(record_table_html)
             self.body += record_table_html
             return record_table_html
-
+    
+    def to_csv(self, output_path):
+        if not self.df.empty:
+            emp_df, vist_df = split_emp_vist_csv(self.df)
+            summary = self.pivot()
+            with pd.ExcelWriter(output_path,engine='xlsxwriter') as writer:
+                summary.to_excel(writer, sheet_name= "SUMMARY")
+                emp_df.to_excel(writer,sheet_name = "EMP_TESTING")
+                vist_df.to_excel(writer,sheet_name = "VISITOR_TESTING")
+    
     def positive_test(self):
         if self.df.empty:
             return ""
@@ -222,6 +290,13 @@ class MissingReportFormatter(BaseFormatter):
             self.memo_html =  "The following employees missed covid tests for the period {}".format(self.report_date)  +  self._format_table(memo_html)
             return self
 
+    def pivot(self):
+        return self.df
+    
+    def to_csv(self, output_path):
+        with pd.ExcelWriter(output_path,engine='xlsxwriter') as writer:
+            self.df.to_excel(writer, sheet_name= "Missing")
+
     def summary(self):
         return self.memo_html
 
@@ -251,7 +326,15 @@ class EmployeeReportFormatter(BaseFormatter):
         else:
             empName = self.df['empName'].iat[0]
         self.heading = "<h1 style='text-align:center;'> {} Covid Testing Report for {}  for {} </h1><h3>Test Summary:</h3>".format("Employee", empName,self.report_date)
-       
+    
+    def pivot(self):
+        self.df["TestByDate"]  = pd.to_datetime(self.df['timeTested']).dt.strftime('%Y-%m-%d')
+        table = pd.pivot_table(self.df, values='timeTested',index=["TestByDate", "result"], columns=['typeOfTest'],aggfunc= ['count'], \
+                        margins = True, margins_name='Total')
+        table.fillna(0, inplace=True)
+        table.columns.name = ""
+        return table
+
     def summary(self):
         if self.df.empty:
             self.body += """<h1>No Testing found</h1>"""
@@ -266,6 +349,12 @@ class EmployeeReportFormatter(BaseFormatter):
             pivot_table_html = self._format_table(pivot_table_html)
             self.body += pivot_table_html
             return pivot_table_html
+        
+    def to_csv(self, output_path):
+        emp_df = self.pivot()
+        with pd.ExcelWriter(output_path,engine='xlsxwriter') as writer:
+            emp_df.to_excel(writer, sheet_name= "Testing Records")
+    
     def detail_records(self):
         return ""
         
