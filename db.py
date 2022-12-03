@@ -11,9 +11,10 @@ import difflib
 import logging
 import sqlalchemy as sa
 from sqlalchemy.sql import text
-from model import Testing
+from model import Testing, VisitorTesting
 from sqlalchemy.orm import sessionmaker
 import traceback
+from sqlalchemy import and_
 
 # from sendEmail import send_email
 
@@ -87,7 +88,7 @@ class Testingdb():
         combin_df = combin_df[["empID","empName","TITLE","MEMO"]]
         return combin_df
     
-    def _updatePosTesting(self, empIDs:str,timeTested:datetime, result:str):
+    def _updatePosTesting(self, empIDs,timeTested:datetime, result:str):
         for empID in empIDs:
             statement = self.session.query(Testing).\
                         filter(Testing.empID == empID, Testing.timeTested >= timeTested).\
@@ -102,6 +103,24 @@ class Testingdb():
                     update({"result":result})
         logging.debug("Update {} negative records".format(statement))
         self.session.commit()
+    
+    def updateVisitorTesting(self,vistors, timeTested):
+        timeTested = datetime.strptime(timeTested, "%m/%d/%Y")
+        self.session.query(VisitorTesting).\
+                    filter(VisitorTesting.timeTested >= timeTested).\
+                    update({"result":"N"})
+        self.session.commit()
+        for i in range(len(vistors)-1):
+            visitorName = vistors[i]
+            print(visitorName)
+            self.session.query(VisitorTesting).\
+                filter(and_(VisitorTesting.timeTested >= timeTested,
+                        VisitorTesting.visitorName == visitorName)).\
+                update({"result":"P"})
+            self.session.commit()
+        
+
+
 
     def updateTesting(self, timeTested, pos=[]):
         timeTested = datetime.strptime(timeTested, "%m/%d/%Y")
@@ -255,11 +274,13 @@ if __name__ == "__main__":
     # t = Testingdb()
     # df  = t.getTodayStatsData()
     s = Testingdb()
-    df = s.get_duplicated_employee()
-    # # print(df.loc[df["no test"] != 0].reset_index()["empName"].to_frame())
-    df.to_excel("duplicated_employee.xlsx", index=None)
-    most_common = s.get_most_common_visitor()
-    most_common.to_excel("most_common_visitor.xlsx", index=None)
+    # df = s.get_duplicated_employee()
+    # # # print(df.loc[df["no test"] != 0].reset_index()["empName"].to_frame())
+    # df.to_excel("duplicated_employee.xlsx", index=None)
+    # most_common = s.get_most_common_visitor()
+    # most_common.to_excel("most_common_visitor.xlsx", index=None)
+    todaysDate = datetime.now().strftime("%m/%d/%Y")
+    s.updateVisitorTesting(["HOLLY,TAYLOR","JOHN,LIVESY"], ["P", "N"], todaysDate)
 
 
     

@@ -16,10 +16,17 @@ import os
 #     "queryRunner.py"
 # ])
 
+# PyInstaller.__main__.run([
+#     '--name=%s' % "most_common_visitor",
+#     '--onefile',
+#     '--windowed',
+#     "db.py"
+# ])
+
+
 PyInstaller.__main__.run([
-    '--name=%s' % "most_common_visitor",
+    '--name=%s' % "custom_reports",
     '--onefile',
     '--windowed',
-    "db.py"
+    "CustomReport.py"
 ])
-
