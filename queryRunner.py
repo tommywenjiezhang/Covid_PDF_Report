@@ -11,6 +11,7 @@ def parse_args():
   parser = argparse.ArgumentParser(description='enter the start and end date')
   parser.add_argument('--update', action='store_true')
   parser.add_argument('-l', '--list', help='delimited list input', type=str)
+  parser.add_argument('-v', '--visitor', help='visitor input', type=str)
   args = parser.parse_args()
   return args
 
@@ -22,6 +23,11 @@ if __name__ == "__main__":
     pos = [str(item)for item in args.list.split(',')]
   else:
     pos= []
+  if args.visitor and len(args.visitor) > 0:
+    vist_pos = [str(item)for item in args.visitor.split('|')]
+  else:
+    vist_pos= []
   tdb = Testingdb()
   todaysDate = datetime.now().strftime("%m/%d/%Y")
   tdb.updateTesting(todaysDate,pos)
+  tdb.updateVisitorTesting(vist_pos,todaysDate)
