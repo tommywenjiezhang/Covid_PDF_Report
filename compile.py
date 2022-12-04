@@ -28,5 +28,6 @@ PyInstaller.__main__.run([
     '--name=%s' % "custom_reports",
     '--onefile',
     '--windowed',
+    '--add-data=%s' % "./wkhtmltopdf.exe;.",
     "CustomReport.py"
 ])

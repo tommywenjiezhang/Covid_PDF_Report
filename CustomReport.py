@@ -38,6 +38,20 @@ class TestsByDepartment(CustomReportBase):
         table = self._process()
         table.to_excel(output_path)
 
+class CustomPivot(CustomReportBase):
+    def setColumns(self, cols):
+        self.columns = cols
+    def setRows(self, rows):
+        self.rows = rows
+    def _process(self):
+        self.df = self.pivot(self.rows,self.columns)
+        return self.df
+    def get_data(self):
+        return self._process()
+    def export(self, output_path):
+        table = self._process()
+        table.to_excel(output_path)
+
 def parse_args():
   """
   Parse input arguments
@@ -45,6 +59,8 @@ def parse_args():
   parser = argparse.ArgumentParser(description='enter the start and end date')
   parser.add_argument('-d', '--date', help='delimited date input', type=str)
   parser.add_argument('-r', '--report_type', help='delimited date input', type=str)
+  parser.add_argument('--rows',  help='row', type=str)
+  parser.add_argument('--columns',  help='column', type=str)
   args = parser.parse_args()
   return args
 
@@ -78,5 +94,27 @@ if __name__ == "__main__":
             email_path = os.path.join(application_path,email_list_path)
             sFormatter.to_pdf(os.path.join(output_dir, "COVID TESTING {}.pdf".format(day_condense_str))).send_email(email_path, subject ="COVID TESTING for{}".format(day_condense_str) )
             sFormatter.to_csv(export_path)
+        elif args.report_type == "CUSTOM":
+            
+            if args.rows and args.columns:
+                rows = [str(item)for item in args.rows.split(',')]
+                columns = [str(item)for item in args.columns.split(',')]
+                day_condense_str = "_".join([d.strftime("%Y_%m_%d") for d in day_range])
+                export_path = os.path.join(output_dir, "COVID TESTING {}.xlsx".format(day_condense_str))
+                td = CustomPivot(df)
+                td.setColumns(columns)
+                td.setRows(rows)
+                df = td.get_data()
+                sFormatter = SpecialReportFormatter(df)
+                sFormatter.set_heading("Custom")
+                email_list_path = "emailList.txt"
+                if getattr(sys, 'frozen', False):
+                    application_path = os.path.dirname(sys.executable)
+                elif __file__:
+                    application_path = os.path.dirname(__file__)
+                email_path = os.path.join(application_path,email_list_path)
+                sFormatter.to_pdf(os.path.join(output_dir, "COVID TESTING {}.pdf".format(day_condense_str))).send_email(email_path, subject ="COVID TESTING for{}".format(day_condense_str) )
+                sFormatter.to_csv(export_path)
+
         
 
