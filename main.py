@@ -93,7 +93,7 @@ if __name__ == "__main__":
             subject = "{}-{} Testing Report".format(start_date.strftime("%Y_%m_%d"), end_date.strftime("%Y_%m_%d"))
             day_range = "{} - {}".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
             pdf_path = get_pdf_path(folder_path, "Weekly", day_range)
-            xlsx_path = get_xlsx_path(folder_path, "Daily",day_range)
+            xlsx_path = get_xlsx_path(folder_path, "Weekly",day_range)
             df = tdb.getWeeklyStatsData(start_date, end_date)
             rformater = WeeklyReportFormatter(df, day_range)
             rformater.to_pdf(pdf_path).send_email(email_path, subject)

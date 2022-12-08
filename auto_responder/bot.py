@@ -19,6 +19,19 @@ def check_if_message_is_different(msgs):
     else:
         return False
 
+def check_report_type(msg):
+    if re.search("missing", msg, re.IGNORECASE):
+        return "MISSING"
+    elif re.search("empid", msg, re.IGNORECASE):
+        return "EMP_ID"
+    else:
+        return "WEEKLY"
+
+def get_empID_from_msgbody(msgbody):
+    empID_reg = re.search("[A-Z][0-9]{1,2}",   msgbody)
+    if empID_reg:
+        return empID_reg.group(0)
+
 def get_dates_from_msgbody(msgbody):
     try:
         if msgbody:
@@ -49,6 +62,4 @@ def get_dates_from_msgbody(msgbody):
 
 
 if __name__ == "__main__":
-    with open("email_body.txt") as f:
-        data = get_dates_from_msgbody(f.read())
-        print(data)
+    print(get_empID_from_msgbody("Testing: 11/22/2022 11/13/2022 J2"))

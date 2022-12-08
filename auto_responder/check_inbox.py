@@ -7,6 +7,7 @@ import email
 from configparser import ConfigParser
 import sys
 import  re
+import logging
 
 
 
@@ -26,6 +27,21 @@ IMAP_SERVER = "smtp.office365.com"
 IMAP_PORT = '993'
 IMAP_USE_SSL = True
 
+
+def parse_uid(data):
+    pattern_uid = re.compile('\d+ \(UID (?P<uid>\d+)\)')
+    match = pattern_uid.match(data)
+    return match.group('uid')
+
+def cast(obj, to_type, options=None):
+    try:
+        if options is None:
+            return to_type(obj)
+        else:
+            return to_type(obj, options)
+    except ValueError and TypeError:
+        return obj
+
 def get_reply_email(From):
     receiver_email = re.search(r"[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*", From, re.IGNORECASE)
     if receiver_email:
@@ -37,13 +53,16 @@ class MailBox(object):
         self.user = user
         self.password = password
         self.msg = None
+        self.mail_uid = None
         if IMAP_USE_SSL:
             self.imap = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
         else:
             self.imap = imaplib.IMAP4(IMAP_SERVER, IMAP_PORT)
 
     def __enter__(self):
-        self.imap.login(self.user, self.password)
+        (retcode, capabilities) = self.imap.login(self.user, self.password)
+        if retcode != "OK":
+            logging.debug("IMAP login failed! Return code: '" + cast(retcode, str) + "'.")
         return self
 
     def __exit__(self, type, value, traceback):
@@ -62,9 +81,14 @@ class MailBox(object):
         self.msg = email_msg
         return email_msg
 
-    def delete_message(self, num):
+    def delete_message(self):
         self.imap.select('Inbox')
-        self.imap.store(num, '+FLAGS', r'\Deleted')
+        result = self.imap.uid('COPY', self.mail_uid, "Deleted")
+        if result[0] == "OK":
+            logging.warning("EMAIL DELETED {}".format(self.mail_uid))
+        else:
+            logging.warning("Copying email to trash failed. Reason: " + str(result))
+        self.imap.uid('STORE', self.mail_uid, '+FLAGS', r'\Deleted')
         self.imap.expunge()
 
     def delete_all(self):
@@ -81,6 +105,8 @@ class MailBox(object):
         for num in reversed(messages[-1:]):
             status, data = self.imap.fetch(num, '(RFC822)')
             email_msg = email.message_from_bytes(data[0][1])
+            print(type(cast(data[0], str, 'UTF-8')))
+            self.mail_uid = num
             self.msg = email_msg
             return email_msg
 
@@ -99,6 +125,8 @@ class MailBox(object):
             if status == 'OK' and data:
                 for num in reversed(data[0].split()):
                     status, data = self.imap.fetch(num, '(RFC822)')
+                    print(num)
+                    self.mail_uid = num
                     self.msg = email.message_from_bytes(data[0][1])
                     email_msg = email.message_from_bytes(data[0][1])
                     return email_msg
@@ -113,6 +141,9 @@ class MailBox(object):
             for num in reversed(data[0].split()):
                 status, data = self.imap.fetch(num, '(RFC822)')
                 self.imap.store(num, '+FLAGS', r'\Deleted')
+                logging.debug("Email deleted: {}".format(email_address))
+        else:
+            logging.debug("Email not found: {}".format(email_address))
         self.imap.expunge()
 
     def parse_msg(self):
@@ -138,9 +169,13 @@ class MailBox(object):
                 except:
                     pass
 
+
+
+
+
+
 if __name__ == '__main__':
     # example:
-
     if getattr(sys, 'frozen', False):
         application_path = os.path.dirname(sys.executable)
     elif __file__:
@@ -154,9 +189,9 @@ if __name__ == '__main__':
     imap_username = username
     imap_password = password
     with MailBox(imap_username, imap_password) as mbox:
-        print (mbox.get_count())
         mbox.get_lastest_email()
-        print(mbox.parse_msg())
+        print(mbox.mail_uid)
+        mbox.delete_message()
         # msgs = mbox.get_latest_email_sent_to("+18482478883@tmomail.net")
         # hashed_str = hash_message(str(msgs))
         # # save_hash_to_file(hashed_str,"hash_msg")

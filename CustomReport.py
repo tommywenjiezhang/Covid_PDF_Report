@@ -95,7 +95,6 @@ if __name__ == "__main__":
             sFormatter.to_pdf(os.path.join(output_dir, "COVID TESTING {}.pdf".format(day_condense_str))).send_email(email_path, subject ="COVID TESTING for{}".format(day_condense_str) )
             sFormatter.to_csv(export_path)
         elif args.report_type == "CUSTOM":
-            
             if args.rows and args.columns:
                 rows = [str(item)for item in args.rows.split(',')]
                 columns = [str(item)for item in args.columns.split(',')]
@@ -115,6 +114,12 @@ if __name__ == "__main__":
                 email_path = os.path.join(application_path,email_list_path)
                 sFormatter.to_pdf(os.path.join(output_dir, "COVID TESTING {}.pdf".format(day_condense_str))).send_email(email_path, subject ="COVID TESTING for{}".format(day_condense_str) )
                 sFormatter.to_csv(export_path)
+        elif args.report_type == "DATA":
+            day_condense_str = "_".join([d.strftime("%Y_%m_%d") for d in day_range])
+            export_path = os.path.join(output_dir, "COVID TESTING {}.xlsx".format(day_condense_str))
+            with pd.ExcelWriter(export_path, engine="xlsxwriter") as writer:
+                df.to_excel(writer, sheet_name="data", index=False)
+                os.startfile(export_path)
 
         
 
