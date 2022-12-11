@@ -41,6 +41,7 @@ def get_dates_from_msgbody(msgbody):
                 dates_rng_list =[datetime(month=int(c[0]),day=int(c[1]),year =int(c[2])) for c in dates_rng_list]
                 min_date = min(dates_rng_list)
                 max_date = max(dates_rng_list)
+                max_date = max_date + timedelta(hours=23)
                 start_date = min_date
                 end_date = max_date
                 return start_date, end_date
