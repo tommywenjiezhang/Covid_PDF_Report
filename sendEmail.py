@@ -72,6 +72,7 @@ def send_email(receiver, attchment_path, subject, body):
         server.quit()
     except Exception as ex:
         logging.error(ex,  exc_info=True)
+        raise ex
 
 if __name__ == "__main__":
     config_object = ConfigParser()

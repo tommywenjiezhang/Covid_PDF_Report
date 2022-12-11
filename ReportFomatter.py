@@ -3,12 +3,15 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 import os, sys
 import re
+import time
 import shutil
 import requests
+import pyautogui
 from convert_pdf import convert_pdf
 from sendEmail import send_email
-from helper import check_internet_connection, read_email_list, highlight_pos_rows, highlight_rows, main_dir
-
+from helper import check_internet_connection, read_email_list, highlight_pos_rows, highlight_rows, main_dir, retries
+from wifi import connect_to_wifi
+import logging
 
 def split_emp_vist(df):
     emp_col = ['empID', 'empName',"Time Tested","DOB","Date Tested", 'symptom', 'typeOfTest',"result"]
@@ -101,8 +104,16 @@ class BaseFormatter():
         html = self.combine_html()
         convert_pdf(pdf_path, html)
         os.startfile(pdf_path)
+        try:
+            time.sleep(2)
+            pyautogui.hotkey("ctrl", "p")
+            time.sleep(1)
+            pyautogui.press('enter')
+        except:
+            pass
         return self
-
+    
+    @retries(num_times=2)
     def send_email(self, email_list_path, subject):
         try:
             for recipient in read_email_list(email_list_path):
@@ -110,10 +121,14 @@ class BaseFormatter():
                     send_email(recipient,self.pdf_path,subject,self.summary())
                 else:
                     pass
-        except:
+        except Exception as ex:
+            logging.debug("Email was not send {}".format(ex))
+            connect_to_wifi()
             if not check_internet_connection():
                 from filedialog import showMessage
                 showMessage("internet")
+            raise ex
+            
 
 class DailyReportFormatter(BaseFormatter):
     def pivot(self):
@@ -245,7 +260,7 @@ class WeeklyReportFormatter(BaseFormatter):
         if self.df.empty:
             return ""
         else:
-            positive_df = self.df.loc[self.df["result"].astype("str") =="P"]
+            positive_df = self.df.loc[(self.df["result"].astype("str") =="P") & (self.df['Category'].astype("str") == "EMPLOYEE")]
             if positive_df.empty:
                 return ""
             else:

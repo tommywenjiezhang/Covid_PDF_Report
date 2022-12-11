@@ -7,14 +7,14 @@ from auto_responder.dehumanize import naturaltime
 
 
 
-def check_if_message_is_different(msgs):
+def check_if_message_is_different(msgs,folder_path):
     hashed_str = hash_message(str(msgs))
-    if not os.path.exists("hash_msg"):
-        save_hash_to_file(hashed_str,"hash_msg")
+    if not os.path.exists(os.path.join(folder_path, "hash_msg")):
+        save_hash_to_file(hashed_str,os.path.join(folder_path, "hash_msg"))
         return True
-    o = load_hash_to_file("hash_msg")
+    o = load_hash_to_file(os.path.join(folder_path, "hash_msg"))
     if o["last_hash_messsage"] != hashed_str:
-        save_hash_to_file(hashed_str,"hash_msg")
+        save_hash_to_file(hashed_str,os.path.join(folder_path, "hash_msg"))
         return True
     else:
         return False
@@ -30,7 +30,7 @@ def check_report_type(msg):
 def get_empID_from_msgbody(msgbody):
     empID_reg = re.search("[A-Z][0-9]{1,2}",   msgbody)
     if empID_reg:
-        return empID_reg.group(0)
+        return empID_reg.group()
 
 def get_dates_from_msgbody(msgbody):
     try:

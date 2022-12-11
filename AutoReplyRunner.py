@@ -5,7 +5,7 @@ import os, sys
 from configparser import ConfigParser
 import logging
 import re
-from helper import makeFolder
+from helper import makeFolder, retries
 from ReportFomatter import EmployeeReportFormatter, MissingReportFormatter, WeeklyReportFormatter
 from sendEmail import send_email
 import time
@@ -23,15 +23,16 @@ user_obj = config_object["USEREMAIL"]
 imap_username = user_obj["email"]
 imap_password = user_obj["password"]
 
+folder_path = makeFolder()
 
-logging.basicConfig(filename="auto_responder.log",
+logging.basicConfig(filename=os.path.join(folder_path,"auto_responder.log"),
                             filemode='a',
                             format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                             datefmt='%H:%M:%S',
                             level=logging.DEBUG)
 logger=logging.getLogger()
 
-folder_path = makeFolder()
+
 
 def get_pdf_path(folder_path,report_type, day_range):
     pdf_name = "{} {}Testing Report".format(day_range, report_type)
@@ -47,7 +48,6 @@ def get_xlsx_path(folder_path,report_type, day_range):
 def is_user_subscribed(userEmail):
     email_db = Emaildb("Emaildb.accdb")
     subscriber_lst = email_db.get_subscribers()
-    print(subscriber_lst)
     if userEmail in subscriber_lst[0]:
         return True
     else:
@@ -55,7 +55,7 @@ def is_user_subscribed(userEmail):
 
 
 
-
+@retries(num_times=2,delay=3)
 def auto_run():
     try:
         # t = Testingdb()
@@ -64,7 +64,7 @@ def auto_run():
             msgs = mbox.get_lastest_email()
             From,Subject,Email_body = mbox.parse_msg()
             From = get_reply_email(From)
-            if check_if_message_is_different(msgs) and is_user_subscribed(From):
+            if check_if_message_is_different(msgs, folder_path) and is_user_subscribed(From):
                 logging.debug("subscriber {}".format(From))
                 start_date, end_date = get_dates_from_msgbody(Email_body)
                 logging.debug("get data from {}-{}".format(start_date, end_date))
@@ -105,6 +105,7 @@ def auto_run():
                     day_range = "{} - {}".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
                     pdf_path = get_pdf_path(folder_path, "Employee", day_range)
                     emp_id =  get_empID_from_msgbody(Email_body)
+                    print(emp_id)
                     xlsx_path = get_xlsx_path(folder_path, "Employee " + emp_id ,day_range)
                     emp_df = tdb.getEmpData(start_date, end_date, emp_id.strip())
                     ef = EmployeeReportFormatter(emp_df, day_range)
@@ -113,35 +114,9 @@ def auto_run():
                     logging.debug("Employee testing Email sent to {}".format(From))
             else:
                 logging.info("email has been checked")
-            # email_dict = refresh_email_list("DICT")
-            # if is_email_exists(From,email_dict):
-            #     old_email = is_email_exists(From,email_dict)
-            #     email_db.update_subscriber_email(old_email,From)
-            #     if check_if_message_is_different():
-            #         is_phone_number = refresh_email_list("DICT")[From]
-            #         start_date, end_date = respond_from_email_input(Email_body)
-            #         subject = "Testing Stats Report for {} to {}".format(start_date.strftime("%m-%d-%Y"),end_date.strftime("%m-%d-%Y"))
-            #         df = t.getWeeklyStatsData(start_date,end_date)
-            #         if is_phone_number:
-            #             subject += "\n\n"
-            #             body = format_whatsapp_report(df) + "\n\n"
-            #             sendText(subject,body,From)
-            #         else:
-            #             body = format_daily_stats(df)
-            #             send_email(From, None, subject, body=body)
-            #             print(From)
-            #             logger.info("sending daily report email to {}".format(From) )
-            # else:
-            #     print("Not in the email subscriber list")
-            #     return
     except Exception as ex:
         logging.debug(ex)
-        traceback.print_exc()
+        raise ex
 
 if __name__ == "__main__":
-    while True:
-        start_time = time.time()
-        auto_run()
-        et = time.time()
-        elapsed_time = et - start_time
-        print('Execution time:', elapsed_time, 'seconds')
+    auto_run()

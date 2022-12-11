@@ -7,6 +7,8 @@ import shutil
 import requests
 from convert_pdf import convert_pdf
 from sendEmail import send_email
+import functools
+import time
 
 
 def highlight_pos_rows(x):
@@ -103,10 +105,23 @@ def read_email_list(email_list_path):
 
 
 
+def retries(num_times, delay=-1):
+    def decorator_repeat(func):
+        @functools.wraps(func)
+        def wrapper_repeat(*args, **kwargs):
+          try:
+            func(*args, **kwargs)
+          except:
+            for _ in range(num_times):
+                if delay > 0:
+                    time.sleep(delay)
+                func(*args, **kwargs)
+        return wrapper_repeat
+    return decorator_repeat
+
 
 if __name__ == "__main__":
-  from db import Testingdb
-  t = Testingdb()
+  pass
   # table = t.getMissingTests(datetime.strptime("10/01/2021", "%m/%d/%Y"), datetime.strptime("10/10/2021", "%m/%d/%Y"))
   # memo = t.uploadActiveTesting("active_testing.xlsx")
   # rf = MissingReportFormater(table, datetime.today().strftime("%Y%m%d"))

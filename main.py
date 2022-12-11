@@ -21,6 +21,8 @@ def get_xlsx_path(folder_path,report_type, day_range):
     return xlsx_path
 
 
+
+
 # Create a custom logger
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='file.log', encoding='utf-8', level=logging.DEBUG)
 
