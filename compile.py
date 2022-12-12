@@ -9,12 +9,12 @@ import os
 #     "main.py"
 # ])
 
-# PyInstaller.__main__.run([
-#     '--name=%s' % "update_test",
-#     '--onefile',
-#     '--windowed',
-#     "queryRunner.py"
-# ])
+PyInstaller.__main__.run([
+    '--name=%s' % "update_test",
+    '--onefile',
+    '--windowed',
+    "queryRunner.py"
+])
 
 # PyInstaller.__main__.run([
 #     '--name=%s' % "most_common_visitor",
@@ -33,11 +33,11 @@ import os
 # ])
 
 
-PyInstaller.__main__.run([
-    '--name=%s' % "auto_email_responder",
-    '--onefile',
-    '--windowed',
-    '--add-data=%s' % "./wkhtmltopdf.exe;.",
-    "AutoReplyRunner.py"
-])
+# PyInstaller.__main__.run([
+#     '--name=%s' % "auto_email_responder",
+#     '--onefile',
+#     '--windowed',
+#     '--add-data=%s' % "./wkhtmltopdf.exe;.",
+#     "AutoReplyRunner.py"
+# ])
 

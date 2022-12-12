@@ -53,7 +53,11 @@ def get_dates_from_msgbody(msgbody):
                 if test_stats_regex.search(msgbody):
                     msgbody = test_stats_regex.search(msgbody).group(1)
                 start_date = naturaltime(msgbody.strip())
-                end_date = datetime.now() + timedelta(hours=23)
+                start_date = datetime.strptime(start_date.strftime("%m/%d/%Y"),"%m/%d/%Y")
+                if start_date.strftime("%m/%d/%Y") == datetime.now().strftime("%m/%d/%Y"):
+                    end_date = start_date + timedelta(hours=23)
+                else:
+                    end_date = datetime.today() + timedelta(hours=23)
                 return start_date, end_date
         else:
             return None

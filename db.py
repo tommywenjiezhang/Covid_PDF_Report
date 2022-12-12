@@ -91,12 +91,15 @@ class Testingdb(BaseDB):
         return combin_df
     
     def _updatePosTesting(self, empIDs,timeTested:datetime, result:str):
-        for empID in empIDs:
-            statement = self.session.query(Testing).\
-                        filter(Testing.empID == empID, Testing.timeTested >= timeTested).\
-                        update({"result":result})
-            logging.debug("Update {} positive records".format(statement))
-            self.session.commit()
+        if len(empIDs) > 0:
+            for empID in empIDs:
+                statement = self.session.query(Testing).\
+                            filter(Testing.empID == empID, Testing.timeTested >= timeTested).\
+                            update({"result":result})
+                logging.debug("Update {} positive records".format(statement))
+                self.session.commit()
+        else:
+            pass
 
     def _updateNegTesting(self,timeTested:datetime, result:str):
         # for empID in empIDs:
@@ -108,18 +111,23 @@ class Testingdb(BaseDB):
     
     def updateVisitorTesting(self,vistors, timeTested):
         timeTested = datetime.strptime(timeTested, "%m/%d/%Y")
-        self.session.query(VisitorTesting).\
+        statement =  self.session.query(VisitorTesting).\
                     filter(VisitorTesting.timeTested >= timeTested).\
                     update({"result":"N"})
         self.session.commit()
-        for i in range(len(vistors)-1):
-            visitorName = vistors[i]
-            self.session.query(VisitorTesting).\
-                filter(and_(VisitorTesting.timeTested >= timeTested,
-                        VisitorTesting.visitorName == visitorName)).\
-                update({"result":"P"})
+        logging.debug("updated {} records".format(statement))
+        if len(vistors) > 0:
+            for v in vistors:
+                visitorName = v
+                statement  =self.session.query(VisitorTesting).\
+                    filter(and_(VisitorTesting.timeTested >= timeTested,
+                            VisitorTesting.visitorName == visitorName)).\
+                    update({"result":"P"})
+                logging.debug("Update {}".format(v))
             self.session.commit()
-        
+            logging.debug("updated {} records".format(statement))
+        else:
+            pass
 
 
 

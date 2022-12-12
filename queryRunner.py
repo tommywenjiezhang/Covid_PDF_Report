@@ -16,7 +16,7 @@ def parse_args():
   return args
 
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='db.log', encoding='utf-8', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='update_testing.log', encoding='utf-8', level=logging.DEBUG)
 if __name__ == "__main__":
   args = parse_args()
   if args.list and len(args.list) > 0:
@@ -27,6 +27,8 @@ if __name__ == "__main__":
     vist_pos = [str(item)for item in args.visitor.split('|')]
   else:
     vist_pos= []
+  print(vist_pos)
+  logging.debug("update {}".format(vist_pos))
   tdb = Testingdb()
   todaysDate = datetime.now().strftime("%m/%d/%Y")
   tdb.updateTesting(todaysDate,pos)

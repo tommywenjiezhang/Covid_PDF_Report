@@ -29,6 +29,7 @@ def split_emp_vist(df):
     return combine_html
 
 
+
 def split_emp_vist_csv(df):
     emp_col = ['empID', 'empName',"Time Tested","DOB","Date Tested", 'symptom', 'typeOfTest',"result"]
     vist_col = ["visitorName","visitorDOB", "Time Tested","Date Tested", "symptom", "typeOfTest", "result"]
@@ -183,12 +184,28 @@ class DailyReportFormatter(BaseFormatter):
             if positive_df.empty:
                 return ""
             else:
-                positive_df.index += 1
+                postive_emp_str  = ""
+                postive_vist_str = ""
                 emp_col = ['empID', 'empName',"Time Tested","DOB","Date Tested", 'symptom', 'typeOfTest',"result"]
-                positive_df = positive_df[emp_col]
-                positive_df= positive_df.style.set_table_styles([{'selector': 'tr,td', 'props': [('font-size', '12pt'),('border-style','solid'),('border-width','1px')]}])
-                positive_df = positive_df.apply(highlight_pos_rows, axis= 1)
-                return "</br><h3>Positive Employees:</h3></br>" + positive_df.to_html()
+                vist_col = ["visitorName","visitorDOB", "Time Tested","Date Tested", "symptom", "typeOfTest", "result"]
+                positive_df.index += 1
+                emp_positive_df = positive_df[positive_df['Category'].astype("str") == "EMPLOYEE"]
+                visitor_positive_df = positive_df[positive_df['Category'].astype("str") == "VISITOR"]
+                if not emp_positive_df.empty:
+                    emp_positive_df = emp_positive_df[emp_col]
+                    emp_positive_df= emp_positive_df.style.set_table_styles([{'selector': 'tr,td', 'props': [('font-size', '12pt'),('border-style','solid'),('border-width','1px')]}])
+                    emp_positive_df = emp_positive_df.apply(highlight_pos_rows, axis= 1)
+                    postive_emp_str =  "<h3>Positive Employees:</h3></br>"  + emp_positive_df.to_html()
+                else:
+                    postive_emp_str = ""
+                if not visitor_positive_df.empty:
+                    visitor_positive_df  = visitor_positive_df[vist_col]
+                    visitor_positive_df = visitor_positive_df.style.set_table_styles([{'selector': 'tr,td', 'props': [('font-size', '12pt'),('border-style','solid'),('border-width','1px')]}])
+                    visitor_positive_df = visitor_positive_df.apply(highlight_pos_rows, axis= 1)
+                    postive_vist_str =  "<h3>Positive Visitor:</h3></br>"  + visitor_positive_df.to_html()
+                else:
+                    postive_vist_str = ""
+                return "</br>{}{}".format(postive_emp_str,postive_vist_str)
         
             
 class SpecialReportFormatter(BaseFormatter):
@@ -260,16 +277,33 @@ class WeeklyReportFormatter(BaseFormatter):
         if self.df.empty:
             return ""
         else:
-            positive_df = self.df.loc[(self.df["result"].astype("str") =="P") & (self.df['Category'].astype("str") == "EMPLOYEE")]
+            positive_df = self.df.loc[self.df["result"].astype("str") =="P"]
             if positive_df.empty:
                 return ""
             else:
-                positive_df.index += 1
+                postive_emp_str  = ""
+                postive_vist_str = ""
                 emp_col = ['empID', 'empName',"Time Tested","DOB","Date Tested", 'symptom', 'typeOfTest',"result"]
-                positive_df = positive_df[emp_col]
-                positive_df= positive_df.style.set_table_styles([{'selector': 'tr,td', 'props': [('font-size', '12pt'),('border-style','solid'),('border-width','1px')]}])
-                positive_df = positive_df.apply(highlight_pos_rows, axis= 1)
-                return "</br><h3>Positive Employees:</h3></br>" + positive_df.to_html()
+                vist_col = ["visitorName","visitorDOB", "Time Tested","Date Tested", "symptom", "typeOfTest", "result"]
+                positive_df.index += 1
+                emp_positive_df = positive_df[positive_df['Category'].astype("str") == "EMPLOYEE"]
+                visitor_positive_df = positive_df[positive_df['Category'].astype("str") == "VISITOR"]
+                if not emp_positive_df.empty:
+                    emp_positive_df = emp_positive_df[emp_col]
+                    emp_positive_df= emp_positive_df.style.set_table_styles([{'selector': 'tr,td', 'props': [('font-size', '12pt'),('border-style','solid'),('border-width','1px')]}])
+                    emp_positive_df = emp_positive_df.apply(highlight_pos_rows, axis= 1)
+                    postive_emp_str =  "<h3>Positive Employees:</h3></br>"  + emp_positive_df.to_html()
+                else:
+                    postive_emp_str = ""
+                if not visitor_positive_df.empty:
+                    visitor_positive_df  = visitor_positive_df[vist_col]
+                    visitor_positive_df = visitor_positive_df.style.set_table_styles([{'selector': 'tr,td', 'props': [('font-size', '12pt'),('border-style','solid'),('border-width','1px')]}])
+                    visitor_positive_df = visitor_positive_df.apply(highlight_pos_rows, axis= 1)
+                    postive_vist_str =  "<h3>Positive Visitor:</h3></br>"  + visitor_positive_df.to_html()
+                else:
+                    postive_vist_str = ""
+                return "</br>{}{}".format(postive_emp_str,postive_vist_str)
+        
 
 class MissingReportFormatter(BaseFormatter):
     def __init__(self, df, report_date=datetime.now().strftime("%Y-%m-%d")):
