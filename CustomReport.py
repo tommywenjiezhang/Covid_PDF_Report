@@ -92,7 +92,7 @@ if __name__ == "__main__":
             elif __file__:
                 application_path = os.path.dirname(__file__)
             email_path = os.path.join(application_path,email_list_path)
-            sFormatter.to_pdf(os.path.join(output_dir, "COVID TESTING {}.pdf".format(day_condense_str))).send_email(email_path, subject ="COVID TESTING for{}".format(day_condense_str) )
+            sFormatter.to_pdf(os.path.join(output_dir, "COVID TESTING {}.pdf".format(day_condense_str)))
             sFormatter.to_csv(export_path)
         elif args.report_type == "CUSTOM":
             if args.rows and args.columns:
@@ -112,7 +112,7 @@ if __name__ == "__main__":
                 elif __file__:
                     application_path = os.path.dirname(__file__)
                 email_path = os.path.join(application_path,email_list_path)
-                sFormatter.to_pdf(os.path.join(output_dir, "COVID TESTING {}.pdf".format(day_condense_str))).send_email(email_path, subject ="COVID TESTING for{}".format(day_condense_str) )
+                sFormatter.to_pdf(os.path.join(output_dir, "COVID TESTING {}.pdf".format(day_condense_str)))
                 sFormatter.to_csv(export_path)
         elif args.report_type == "DATA":
             day_condense_str = "_".join([d.strftime("%Y_%m_%d") for d in day_range])

@@ -39,7 +39,7 @@ if __name__ == "__main__":
     tdb = Testingdb()
     folder_path = makeFolder()
     summary = ""
-    if args.start and args.start != datetime.now().strftime("%m/%d/%Y"):
+    if args.start:
         start_date = datetime.strptime(args.start,"%m/%d/%Y")
         if args.end:
             end_date = datetime.strptime(args.end,"%m/%d/%Y") + timedelta(hours=23)
@@ -63,7 +63,7 @@ if __name__ == "__main__":
                 missingft = MissingReportFormatter(missing_df, day_range)
                 missingft.set_heading("Missing")
                 subject = "{}-{} Missing Testing Report Audit".format(start_date.strftime("%Y_%m_%d"), end_date.strftime("%Y_%m_%d"))
-                missingft.memo_body(memo_df).to_pdf(pdf_path).send_email(email_path,subject=subject)
+                missingft.memo_body(memo_df).to_pdf(pdf_path)
                 missingft.to_csv(xlsx_path)
                 # convert_pdf(pdf_path, report_html)
             except Exception as e:
@@ -77,7 +77,7 @@ if __name__ == "__main__":
                 missingrf = MissingReportFormatter(df,day_range)
                 missingrf.set_heading("Missing")
                 subject = "{}-{} Missing Testing Report Audit".format(start_date.strftime("%Y_%m_%d"), end_date.strftime("%Y_%m_%d"))
-                missingrf.memo_body(None).to_pdf(pdf_path).send_email(email_path,subject=subject)
+                missingrf.memo_body(None).to_pdf(pdf_path)
                 missingrf.to_csv(xlsx_path )
                 # convert_pdf(pdf_path, report_html)
         elif args.empID:
@@ -90,6 +90,15 @@ if __name__ == "__main__":
                 ef = EmployeeReportFormatter(emp_df, day_range)
                 ef.to_pdf(pdf_path)
                 ef.to_csv(xlsx_path)
+        elif args.start == datetime.now().strftime("%m/%d/%Y"):
+            today_date = datetime.now().strftime("%Y-%m-%d")
+            subject = "{} Testing Report".format(today_date)
+            pdf_path = get_pdf_path(folder_path, "Daily",today_date)
+            xlsx_path = get_xlsx_path(folder_path, "Daily",today_date)
+            df = tdb.getTodayStatsData()
+            rformater = DailyReportFormatter(df, today_date)
+            rformater.to_pdf(pdf_path)
+            rformater.to_csv(xlsx_path)
         else:
             logging.debug("Employee Report Ran {} - {}".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")))
             subject = "{}-{} Testing Report".format(start_date.strftime("%Y_%m_%d"), end_date.strftime("%Y_%m_%d"))
@@ -98,17 +107,9 @@ if __name__ == "__main__":
             xlsx_path = get_xlsx_path(folder_path, "Weekly",day_range)
             df = tdb.getWeeklyStatsData(start_date, end_date)
             rformater = WeeklyReportFormatter(df, day_range)
-            rformater.to_pdf(pdf_path).send_email(email_path, subject)
+            rformater.to_pdf(pdf_path)
             rformater.to_csv(xlsx_path)
             # if args.csv:
             #     csv_path = os.path.join(folder_path,pdf_name)
             #     rformater.split_emp_vist_csv(csv_path)
-    else:
-        today_date = datetime.now().strftime("%Y-%m-%d")
-        subject = "{} Testing Report".format(today_date)
-        pdf_path = get_pdf_path(folder_path, "Daily",today_date)
-        xlsx_path = get_xlsx_path(folder_path, "Daily",today_date)
-        df = tdb.getTodayStatsData()
-        rformater = DailyReportFormatter(df, today_date)
-        rformater.to_pdf(pdf_path).send_email(email_path, subject)
-        rformater.to_csv(xlsx_path)
+        
