@@ -50,7 +50,7 @@ class BaseDB():
             self.conn = engine
             Session = sessionmaker(bind=engine)
             self.session = Session()
-            logging.debug("Database connection established, driver used{}".format(access_driver))
+            logging.debug("Database connection established, driver used {}".format(access_driver))
         except Exception as e:
             logging.error("DATABASE CONNECTION NOT SUCCESSFUL")
             logging.error(connection_url)
@@ -171,6 +171,7 @@ class Testingdb(BaseDB):
     def getMissingTests(self, start_date:datetime, end_date:datetime):
         qry_start_date = "#{}#".format(start_date.strftime("%Y-%m-%d %H:%M:%S"))
         qry_end_date = "#{}#".format(end_date.strftime("%Y-%m-%d %H:%M:%S"))
+        logging.debug( "Missing Testing {}-{}".format(qry_start_date,qry_end_date))
         emp_qry = "Select empList.empID, empList.empName, empList.DOB,t.timeTested,t.typeOfTest, t.result from empList left join (Select Testing.empID, Testing.timeTested,Testing.typeOfTest, Testing.result FROM Testing where Testing.timeTested >= {} and Testing.timeTested <= {}) AS t ON empList.empID = t.empID order by t.timeTested asc".format(qry_start_date, qry_end_date)
         emp_df = pd.read_sql(emp_qry, self.conn)
         week_day_category = ["Sunday","Monday", "Tuesday"\
@@ -204,6 +205,7 @@ class Testingdb(BaseDB):
 
 
     def getCustomDayRange(self,date_lst):
+        logging.debug("Custom Report {}".format(date_lst))
         min_date = min(date_lst)
         max_date = max(date_lst)
         max_date += timedelta(hours=23)
@@ -224,6 +226,7 @@ class Testingdb(BaseDB):
     def getWeeklyStatsData(self, start_date:datetime, end_date:datetime):
         qry_start_date = "#{}#".format(start_date.strftime("%Y-%m-%d %H:%M:%S"))
         qry_end_date = "#{}#".format(end_date.strftime("%Y-%m-%d %H:%M:%S"))
+        logging.debug( "Weely Testing {}-{}".format(qry_start_date,qry_end_date))
         emp_qry = "Select empList.empID, empList.empName, empList.DOB, Testing.timeTested, Testing.typeOfTest, Testing.result from  empList \
                   left JOIN Testing ON empList.empID = Testing.empID where Testing.timeTested >= {} and Testing.timeTested <= {} order by Testing.timeTested asc".format(qry_start_date, qry_end_date)
         vistor_qry = "select * from visitorTesting where timeTested >= {} and timeTested <= {}".format(qry_start_date,qry_end_date)

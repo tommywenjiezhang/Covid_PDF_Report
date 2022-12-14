@@ -385,6 +385,8 @@ class EmployeeReportFormatter(BaseFormatter):
             table = pd.pivot_table(self.df, values='timeTested',index=["TestByDate", "result"], columns=['typeOfTest'],aggfunc= ['count'], \
                             margins = True, margins_name='Total')
             table.fillna(0, inplace=True)
+            table = table.droplevel(0, axis=1)
+            table.index.names = ["Test Date", "Result"]
             table.columns.name = ""
             pivot_table_html = table.to_html()
             pivot_table_html = self._format_table(pivot_table_html)

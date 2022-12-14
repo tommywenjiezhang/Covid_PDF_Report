@@ -21,10 +21,16 @@ def get_xlsx_path(folder_path,report_type, day_range):
     return xlsx_path
 
 
-
-
+user_dir = os.environ['USERPROFILE']
+onedrive = os.path.join(user_dir, "OneDrive", "Documents", "log")
+log_name = datetime.now().strftime("%Y-%m-%d") +  'pdfReport.log'
+try:
+    if not os.path.exists(onedrive):
+        os.makedirs(onedrive)
+    logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename=os.path.join(onedrive,log_name), encoding='utf-8', level=logging.DEBUG, filemode="a")
+except:
 # Create a custom logger
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='file.log', encoding='utf-8', level=logging.DEBUG)
+    logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='pdfReport.log', encoding='utf-8', level=logging.DEBUG)
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
