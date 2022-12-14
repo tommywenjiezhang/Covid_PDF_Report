@@ -21,7 +21,9 @@ def split_emp_vist(df):
     vist_df.index += 1
     vist_df.rename(columns={'visitorName':'Visitor Name', 'visitorDOB':'DOB'},inplace=True)
     emp_df= emp_df.style.set_table_styles([{'selector': 'tr,td', 'props': [('font-size', '12pt'),('border-style','solid'),('border-width','1px')]}])
+    vist_df= vist_df.style.set_table_styles([{'selector': 'tr,td', 'props': [('font-size', '12pt'),('border-style','solid'),('border-width','1px')]}])
     emp_df = emp_df.apply(highlight_pos_rows, axis= 1)
+    vist_df = vist_df.apply(highlight_pos_rows, axis= 1)
     emp_html = emp_df.to_html()
     vist_html = vist_df.to_html()
     combine_html = "<h3>Employee Testing:</h3></br>{}<h3>Visitor Testing:</h3></br>{}".format(emp_html,vist_html)
@@ -45,9 +47,11 @@ def split_emp_vist_csv(df):
 def validate_df(df):
     df.loc[df["symptom"]==False, "symptom"] = "None"
     df['DOB']= pd.to_datetime(df['DOB'])
+    df['visitorDOB'] = pd.to_datetime(df['visitorDOB'] )
     df['timeTested']= pd.to_datetime(df['timeTested'])
     df["Date Tested"]= df.timeTested.dt.strftime("%Y-%m-%d")
     df['DOB'] = df['DOB'].dt.strftime("%Y-%m-%d")
+    df['visitorDOB'] = df['visitorDOB'].dt.strftime("%Y-%m-%d")
     df["Time Tested"] = df.timeTested.dt.strftime('%H:%M %p')
     return df
 
@@ -67,13 +71,13 @@ class BaseFormatter():
 
     def _format_table(self,table_html):
         html = ""
-        css= "<style>{}</style>".format("th, td {padding: 15px;}")
+        css= "<style>{}</style>".format("th, td {padding: 10px;}")
         soup = BeautifulSoup(table_html,'html.parser')
         tables = soup.find_all("table")
         for table in tables:
             table["style"] = "border-collapse: collapse;\
                                 margin: 5px 0;\
-                                font-size: 1em;\
+                                font-size: 12px;\
                                 font-family: sans-serif;\
                                 min-width: 400px;\
                                 width:100%;\
