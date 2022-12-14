@@ -18,7 +18,7 @@ def parse_args():
 
 
 user_dir = os.environ['USERPROFILE']
-onedrive = os.path.join( user_dir, "OneDrive", "Documents", "log")
+onedrive = os.path.join(user_dir, "OneDrive", "Documents", "log")
 if not os.path.exists(onedrive):
   os.makedirs(onedrive)
 
