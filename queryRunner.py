@@ -2,6 +2,7 @@ import argparse
 from db import Testingdb
 from datetime import datetime
 import logging
+import os
 
 
 def parse_args():
@@ -16,7 +17,12 @@ def parse_args():
   return args
 
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='update_testing.log', encoding='utf-8', level=logging.DEBUG)
+user_dir = os.environ['USERPROFILE']
+onedrive = os.path.join( user_dir, "OneDrive", "Documents", "log")
+if not os.path.exists(onedrive):
+  os.makedirs(onedrive)
+
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename=os.path.join(onedrive,'update_testing.log'), encoding='utf-8', level=logging.DEBUG)
 if __name__ == "__main__":
   args = parse_args()
   if args.list and len(args.list) > 0:
