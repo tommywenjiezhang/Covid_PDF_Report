@@ -6,7 +6,6 @@ import re
 import time
 import shutil
 import requests
-import pyautogui
 from convert_pdf import convert_pdf
 from sendEmail import send_email
 from helper import check_internet_connection, read_email_list, highlight_pos_rows, highlight_rows, main_dir, retries
@@ -105,13 +104,6 @@ class BaseFormatter():
         html = self.combine_html()
         convert_pdf(pdf_path, html)
         os.startfile(pdf_path)
-        try:
-            time.sleep(2)
-            pyautogui.hotkey("ctrl", "p")
-            time.sleep(1)
-            pyautogui.press('enter')
-        except:
-            pass
         return self
     
     @retries(num_times=2)
