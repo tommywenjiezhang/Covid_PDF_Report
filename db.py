@@ -15,6 +15,7 @@ from model import Testing, VisitorTesting
 from sqlalchemy.orm import sessionmaker
 import traceback
 from sqlalchemy import and_
+from fuzzywuzzy import process
 
 # from sendEmail import send_email
 
@@ -146,6 +147,15 @@ class Testingdb(BaseDB):
         df["duplicated"] = df.duplicated(subset=["first_name", "last_name"],keep=False).map({True:'Yes', False:'No'})
         df = df[df["duplicated"] == "Yes"].sort_values(by=["last_name","first_name"])
         return df
+    
+    def lookup_vistor(self, visitor_name, start_date:datetime, end_date:datetime):
+        df = self.getWeeklyStatsData(start_date, end_date)
+        df = df.loc[df["Category"] == "VISITOR"]
+        visitor_list = df["visitorName"].to_list()
+        visitor_lookup = process.extract(visitor_name, visitor_list, limit=1)
+        print(visitor_lookup)
+        result = df.loc[df["visitorName"] ==visitor_lookup[0][0] ] 
+        return result.reset_index(drop=True)
 
 
     def get_most_common_visitor(self):
@@ -271,16 +281,10 @@ class MessageDB():
 
 
 if __name__ == "__main__":
-    def is_user_subscribed(userEmail):
-        email_db = Emaildb("Emaildb.accdb")
-        subscriber_lst = email_db.get_subscribers()
-        print(subscriber_lst)
-        if userEmail in subscriber_lst[0]:
-            return True
-        else:
-            return False
-    print(is_user_subscribed("tommywenjiezhang@gmail.com"))
-
-
+    db = Testingdb()
+    start_time = datetime.strptime("12/11/2022", "%m/%d/%Y")
+    end_time = datetime.strptime("12/31/2022", "%m/%d/%Y")
+    result = db.lookup_vistor("LEE,LYDIA", start_time,end_time)
+    print(result)
     
     

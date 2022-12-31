@@ -47,8 +47,8 @@ def split_emp_vist_csv(df):
 def validate_df(df):
     df.loc[df["symptom"]==False, "symptom"] = "None"
     df['DOB']= pd.to_datetime(df['DOB'])
-    df['visitorDOB'] = pd.to_datetime(df['visitorDOB'] )
-    df['timeTested']= pd.to_datetime(df['timeTested'])
+    df['visitorDOB'] = pd.to_datetime(df['visitorDOB'],errors = 'coerce')
+    df['timeTested']= pd.to_datetime(df['timeTested'], errors = 'coerce')
     df["Date Tested"]= df.timeTested.dt.strftime("%Y-%m-%d")
     df['DOB'] = df['DOB'].dt.strftime("%Y-%m-%d")
     df['visitorDOB'] = df['visitorDOB'].dt.strftime("%Y-%m-%d")
@@ -363,6 +363,32 @@ class MissingReportFormatter(BaseFormatter):
 
     def combine_html(self):
         return self.heading + self.detail_records() + "<br/><p> Auto-generated testing report for {} </p>".format(datetime.now().strftime("%m/%d/%Y %H:%M:%S"))
+
+
+class VisitorReportFormatter(BaseFormatter):
+    def __init__(self, df, report_date=datetime.now().strftime("%Y-%m-%d")):
+        super().__init__(df, report_date)
+        if self.df.empty:
+            visitorName = ""
+        else:
+            visitorName = self.df["visitorName"].iat[0]
+        self.heading = "<h1 style='text-align:center;'> {} Covid Testing Report for {}  for {} </h1><h3>Test Summary:</h3>".format("Visitor", visitorName,self.report_date)
+    def summary(self):
+        if self.df.empty:
+            self.body += """<h1>No Testing found</h1>"""
+            return self.body
+        else:
+            self.df["TestByDate"]  = pd.to_datetime(self.df['timeTested']).dt.strftime('%Y-%m-%d')
+            table = pd.pivot_table(self.df, values='timeTested',index=["TestByDate", "result"], columns=['typeOfTest'],aggfunc= ['count'], \
+                            margins = True, margins_name='Total')
+            table.fillna(0, inplace=True)
+            table = table.droplevel(0, axis=1)
+            table.index.names = ["Test Date", "Result"]
+            table.columns.name = ""
+            pivot_table_html = table.to_html()
+            pivot_table_html = self._format_table(pivot_table_html)
+            self.body += pivot_table_html
+            return pivot_table_html
 
         
 class EmployeeReportFormatter(BaseFormatter):
