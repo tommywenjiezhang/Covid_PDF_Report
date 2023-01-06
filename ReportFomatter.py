@@ -11,6 +11,7 @@ from sendEmail import send_email
 from helper import check_internet_connection, read_email_list, highlight_pos_rows, highlight_rows, main_dir, retries
 from wifi import connect_to_wifi
 import logging
+from load_html import load_context_to_template
 
 def split_emp_vist(df):
     emp_col = ['empID', 'empName',"Time Tested","DOB","Date Tested", 'symptom', 'typeOfTest',"result"]
@@ -28,6 +29,21 @@ def split_emp_vist(df):
     vist_html = vist_df.to_html()
     combine_html = "<h3>Employee Testing:</h3></br>{}<h3>Visitor Testing:</h3></br>{}".format(emp_html,vist_html)
     return combine_html
+
+def split_resident_by_wing(df):
+    output =[]
+    cols = ["residentName","DOB","Time Tested", "Date Tested", "roomNum",\
+                 "symptom", "typeOfTest","result",	"lotNumber","expirationDate"]
+    wings = df.wings.value_counts().index
+    for wing in wings:
+        df_bywing = df[df.wings == wing]
+        df_bywing = df_bywing[cols]
+        df_bywing = df_bywing.style.set_table_styles([{'selector': 'tr,td', 'props': [('font-size', '12pt'),('border-style','solid'),('border-width','1px')]}])
+        df_bywing = df_bywing.apply(highlight_pos_rows, axis= 1)
+        wing_html = df_bywing.to_html()
+        combine_html = "<h3>{} Testing:</h3></br>".format(wing) + wing_html
+        output.append(combine_html)
+    return "</br>".join(output)
 
 
 
@@ -55,6 +71,17 @@ def validate_df(df):
     df["Time Tested"] = df.timeTested.dt.strftime('%H:%M %p')
     return df
 
+
+def validate_resident_df(df):
+    df.loc[df["symptom"]==False, "symptom"] = "None"
+    df['DOB']= pd.to_datetime(df['DOB'])
+    df['timeTested']= pd.to_datetime(df['timeTested'])
+    df["expirationDate"] = pd.to_datetime(df["expirationDate"])
+    df["Date Tested"]= df.timeTested.dt.strftime("%Y-%m-%d")
+    df['DOB'] = df['DOB'].dt.strftime("%Y-%m-%d")
+    df["expirationDate"] = df["expirationDate"].dt.strftime("%Y-%m-%d")
+    df["Time Tested"] = df.timeTested.dt.strftime('%H:%M %p')
+    return df
 
 class BaseFormatter():
     def __init__(self, df, report_date = datetime.now().strftime("%Y-%m-%d")):
@@ -406,25 +433,88 @@ class EmployeeReportFormatter(BaseFormatter):
     
     def detail_records(self):
         return ""
-        
+
+class ResidentFormatter(BaseFormatter):
+    def summary(self):
+        if self.df.empty:
+            self.body += """<h1>No Testing Records found</h1>"""
+            return self.body
+        else:
+            self.df["TestByDate"]  = pd.to_datetime(self.df['timeTested']).dt.strftime('%Y-%m-%d')
+            table = pd.pivot_table(self.df, values='timeTested',index=['wings',"TestByDate", "result"], columns=['typeOfTest'],aggfunc= ['count'], \
+                            margins = True, margins_name='Total')
+            table.fillna(0, inplace=True)
+            table = table.droplevel(0, axis=1)
+            table.columns.name = ""
+            pivot_table_html = table.to_html()
+            pivot_table_html = self._format_table(pivot_table_html)
+            self.body += pivot_table_html
+            return pivot_table_html
+
+    def detail_records(self):
+        if self.df.empty:
+            self.body += """<h1>No Testing Today</h1>"""
+            return self.body
+        else:
+            self.df = validate_resident_df(self.df)
+            record_table_html = split_resident_by_wing(df)
+            positve_html = self._format_table(self.positive_test())
+            record_table_html = positve_html + self._format_table(record_table_html)
+            self.body += record_table_html
+            return record_table_html
+    
+    def to_csv(self, output_path):
+        if not self.df.empty:
+            emp_df, vist_df = split_emp_vist_csv(self.df)
+            summary = self.pivot()
+            with pd.ExcelWriter(output_path,engine='xlsxwriter') as writer:
+                summary.to_excel(writer, sheet_name= "SUMMARY")
+                emp_df.to_excel(writer,sheet_name = "EMP_TESTING")
+                vist_df.to_excel(writer,sheet_name = "VISITOR_TESTING")
+    
+    def positive_test(self):
+        if self.df.empty:
+            return ""
+        else:
+            positive_df = self.df.loc[self.df["result"].astype("str") =="P"]
+            if positive_df.empty:
+                return ""
+            else:
+                positive_df.index += 1
+                positive_df= positive_df.style.set_table_styles([{'selector': 'tr,td', 'props': [('font-size', '12pt'),('border-style','solid'),('border-width','1px')]}])
+                positive_df = positive_df.apply(highlight_pos_rows, axis= 1)
+                postive_resident_str =  "<h3>Positive Resident:</h3></br>"  + positive_df.to_html()
+                return "</br>{}".format(postive_resident_str)
+    
+    def batch_html(self, pdf_path):
+        if self.df.empty:
+            return
+        else:
+            template_df = self.df.rename(columns={"residentName":"name","TestByDate":"testDate"})
+            residents = template_df.to_dict(orient="records")
+            if not os.path.exists(pdf_path):
+                os.makedirs(pdf_path)
+            for resident in residents:
+                name = resident.get("name")
+                testDate = resident.get("testDate")
+                filename = name + "test_export" + testDate + ".pdf"
+                fullpath = os.path.join(pdf_path, filename)
+                context = {"resident":resident, "whitespaces": " "*20}
+                html = load_context_to_template(context,"ResidentTestingTemplate.html")
+                convert_pdf(fullpath, html)
+            os.startfile(pdf_path)
+
+
  
 if __name__ == "__main__":
-  from db import Testingdb
-  t = Testingdb()
-
-  table = t.getMissingTests(datetime.strptime("10/01/2021", "%m/%d/%Y"), datetime.strptime("10/14/2021", "%m/%d/%Y"))
-  rf = MissingReportFormatter(table, datetime.today().strftime("%Y%m%d"))
-  rf.set_heading("Missing" )
-  active_file_path = os.path.join(main_dir(),"active_testing.xlsx")
-  memo_df = t.uploadActiveTesting(active_file_path)
-  rf.memo_body(memo_df).summary()
-  html = rf.combine_html()
- 
-
-  html = rf.combine_html()
-
-  with open("output.html", mode="w") as f:
-    f.write(html)
+    from db import ResidentDB
+    rdb = ResidentDB("ResidentDb.accdb")
+    start_date = datetime.strptime("12/01/2022", "%m/%d/%Y")
+    end_date = datetime.strptime("01/06/2023", "%m/%d/%Y")
+    df = rdb.getWeeklyResidentTesting(start_date, end_date)
+    formattter = ResidentFormatter(df)
+    formattter.to_pdf("Resident Testing.pdf")
+    formattter.batch_html("Resident_Testing_Batch")
   # memo = t.uploadActiveTesting("active_testing.xlsx")
  
   # memo = rf.combine_memo(memo)

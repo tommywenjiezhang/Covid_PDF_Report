@@ -87,6 +87,7 @@ if __name__ == "__main__":
                 missingrf.to_csv(xlsx_path )
                 # convert_pdf(pdf_path, report_html)
         elif args.empID:
+            try:
                 logging.info("Employee Report Ran {} - {}".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")))
                 subject = "{}-{} Employee Testing Report".format(start_date.strftime("%Y_%m_%d"), end_date.strftime("%Y_%m_%d"))
                 day_range = "{} - {}".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
@@ -96,6 +97,8 @@ if __name__ == "__main__":
                 ef = EmployeeReportFormatter(emp_df, day_range)
                 ef.to_pdf(pdf_path)
                 ef.to_csv(xlsx_path)
+            except Exception as ex:
+                logging.debug("EmpID Report {}".format(ex))
         elif args.start == datetime.now().strftime("%m/%d/%Y"):
             today_date = datetime.now().strftime("%Y-%m-%d")
             subject = "{} Testing Report".format(today_date)

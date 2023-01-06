@@ -220,8 +220,6 @@ class Testingdb(BaseDB):
         return merge_df
 
 
-
-
     
     def getWeeklyStatsData(self, start_date:datetime, end_date:datetime):
         qry_start_date = "#{}#".format(start_date.strftime("%Y-%m-%d %H:%M:%S"))
@@ -269,18 +267,26 @@ class MessageDB():
         messages = pd.read_sql(qry, self.conn)
         return messages
 
+class ResidentDB(BaseDB):
+    def getWeeklyResidentTesting(self,start_date:datetime, end_date:datetime):
+        qry_start_date = "#{}#".format(start_date.strftime("%Y-%m-%d %H:%M:%S"))
+        qry_end_date = "#{}#".format(end_date.strftime("%Y-%m-%d %H:%M:%S"))
+        logging.debug("Weekly Test for Resident {} - {}".format(qry_start_date, qry_end_date))
+        statement = "select * from qry_testing where timeTested >= {} and timeTested <= {} order by timeTested asc".format(qry_start_date,qry_end_date)
+        resident_df = pd.read_sql(statement, self.conn)
+        resident_df["result"].replace("", None, inplace=True)
+        resident_df["wings"] = resident_df["wings"].str.strip()
+        resident_df["result"].fillna("N", inplace=True)
+        resident_df["timeTested"]= pd.to_datetime(resident_df["timeTested"])
+        return resident_df
+
+        
 
 if __name__ == "__main__":
-    def is_user_subscribed(userEmail):
-        email_db = Emaildb("Emaildb.accdb")
-        subscriber_lst = email_db.get_subscribers()
-        print(subscriber_lst)
-        if userEmail in subscriber_lst[0]:
-            return True
-        else:
-            return False
-    print(is_user_subscribed("tommywenjiezhang@gmail.com"))
-
-
+    rdb = ResidentDB("ResidentDb.accdb")
+    start_date = datetime.strptime("12/01/2022", "%m/%d/%Y")
+    end_date = datetime.strptime("01/05/2023", "%m/%d/%Y")
+    df = rdb.getWeeklyResidentTesting(start_date, end_date)
+    print(df.wings.value_counts().index)
     
     
