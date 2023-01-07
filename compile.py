@@ -1,13 +1,13 @@
 import PyInstaller.__main__
 import os
 
-PyInstaller.__main__.run([
-    '--name=%s' % "pdfReport",
-    '--onefile',
-    '--windowed',
-    '--add-data=%s' % "./wkhtmltopdf.exe;.",
-    "main.py"
-])
+# PyInstaller.__main__.run([
+#     '--name=%s' % "pdfReport",
+#     '--onefile',
+#     '--windowed',
+#     '--add-data=%s' % "./wkhtmltopdf.exe;.",
+#     "main.py"
+# ])
 
 # PyInstaller.__main__.run([
 #     '--name=%s' % "update_test",
@@ -41,3 +41,9 @@ PyInstaller.__main__.run([
 #     "AutoReplyRunner.py"
 # ])
 
+
+PyInstaller.__main__.run([
+    '--name=%s' % "search_visitor",
+    '--windowed',
+    "search_visitor.py"
+])
