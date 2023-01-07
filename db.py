@@ -11,7 +11,7 @@ import difflib
 import logging
 import sqlalchemy as sa
 from sqlalchemy.sql import text
-from model import Testing, VisitorTesting
+from model import Testing, VisitorTesting, ResidentTesting
 from sqlalchemy.orm import sessionmaker
 import traceback
 from sqlalchemy import and_
@@ -300,6 +300,30 @@ class ResidentDB(BaseDB):
         resident_df["timeTested"]= pd.to_datetime(resident_df["timeTested"])
         return resident_df
 
+    def _updatePosTesting(self, residentIDS,timeTested:datetime, result:str):
+        if len(residentIDS) > 0:
+            for ResidentID in residentIDS:
+                statement = self.session.query(ResidentTesting).\
+                            filter(ResidentTesting.ResidentID == ResidentID, ResidentTesting.timeTested >= timeTested).\
+                            update({"result":result})
+                logging.debug("Update {} positive records".format(statement))
+                self.session.commit()
+        else:
+            pass
+
+    def _updateNegTesting(self,timeTested:datetime, result:str):
+        # for empID in empIDs:
+        statement = self.session.query(ResidentTesting).\
+                    filter(ResidentTesting.timeTested >= timeTested).\
+                    update({"result":result})
+        logging.debug("Update {} negative records".format(statement))
+        self.session.commit()
+
+    def updateTesting(self, timeTested, pos=[]):
+        timeTested = datetime.strptime(timeTested, "%m/%d/%Y")
+        self._updateNegTesting(timeTested, "N")
+        if len(pos) > 0:
+            self._updatePosTesting(pos,timeTested, "P")
         
 
 if __name__ == "__main__":

@@ -10,10 +10,10 @@ def resource_path(relative_path):
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
 
-def convert_pdf(out_path, body):
+def convert_pdf(out_path, body, options = None):
     path_wkhtmltopdf = resource_path('./wkhtmltopdf.exe')
     config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
-    pdfkit.from_string(body, out_path, configuration=config)
+    pdfkit.from_string(body, out_path, configuration=config,options=options)
     
 if __name__ == "__main__":
     today_date = datetime.now().strftime("%Y_%m_%d")

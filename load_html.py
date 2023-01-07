@@ -1,28 +1,19 @@
 from jinja2 import Environment, FileSystemLoader
 from datetime import datetime
+import sys, os
 
-residents = [{"name":"tommy",
-             "test_date": "01-05-2023",
-            "lotNumber": "9023923",
-            "expirationDate": "01/30/2023"
-            }, 
-            {"name":"tommy",
-             "test_date": "01-05-2023",
-            "lotNumber": "9023923",
-            "expirationDate": "01/30/2023"
-            }]
-            
 
 def load_context_to_template(context,template_name):
-    environment = Environment(loader=FileSystemLoader("templates/"))
+    if getattr(sys, 'frozen', False):
+        application_path = os.path.dirname(sys.executable)
+    elif __file__:
+        application_path = os.path.dirname(__file__)
+    environment = Environment(loader=FileSystemLoader(os.path.join(application_path, "templates/")))
     template = environment.get_template(template_name)
     html = template.render(context)
     return html
 
 
 if __name__ == "__main__":
-    context = {"residents":residents}
-    html = load_context_to_template(context, "ResidentTestingTemplate.html")
-    print(html)
-
+    pass
 

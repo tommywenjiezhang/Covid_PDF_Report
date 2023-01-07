@@ -58,12 +58,16 @@
 		div.WordSection1 {
 			page: WordSection1;
 		}
-		-->
+		@media print {
+    		.pagebreak { page-break-before: always; } /* page-break-after works, as well */
+		}
 	</style>
 
 </head>
 
 <body lang=EN-US style='word-wrap:break-word'>
+	{% for resident in residents %}
+	<div class="pagebreak"> </div>
 	<div class=WordSection1>
 
 		<p class=MsoNormal align=center style='text-align:center'><span style='font-size:12.0pt;line-height:107%'>NEW
@@ -139,6 +143,9 @@
 		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>&nbsp;</span></p>
 
 	</div>
+	
+	{% endfor %}
 </body>
+
 
 </html>

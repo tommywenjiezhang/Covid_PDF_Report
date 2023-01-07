@@ -520,15 +520,16 @@ class ResidentFormatter(BaseFormatter):
             residents = template_df.to_dict(orient="records")
             if not os.path.exists(pdf_path):
                 os.makedirs(pdf_path)
-            for resident in residents:
-                name = resident.get("name")
-                testDate = resident.get("testDate")
-                filename = name + "test_export" + testDate + ".pdf"
-                fullpath = os.path.join(pdf_path, filename)
-                context = {"resident":resident, "whitespaces": " "*20}
-                html = load_context_to_template(context,"ResidentTestingTemplate.html")
-                convert_pdf(fullpath, html)
-            os.startfile(pdf_path)
+            context = {"residents":residents, "whitespaces": " "*20}
+            testDate = template_df["testDate"].iloc[0]
+            filename = "resident_test_export" + testDate + ".pdf"
+            fullpath = os.path.join(pdf_path, filename)
+            html = load_context_to_template(context,"ResidentTestingTemplate.html")
+            pdfkit_options = {
+            'print-media-type': '',
+            }
+            convert_pdf(fullpath, html, options=pdfkit_options)
+            os.startfile(fullpath)
 
 
  

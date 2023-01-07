@@ -9,12 +9,12 @@ import os
 #     "main.py"
 # ])
 
-# PyInstaller.__main__.run([
-#     '--name=%s' % "update_test",
-#     '--onefile',
-#     '--windowed',
-#     "queryRunner.py"
-# ])
+PyInstaller.__main__.run([
+    '--name=%s' % "update_resident_test",
+    '--onefile',
+    '--windowed',
+    "update_resident.py"
+])
 
 # PyInstaller.__main__.run([
 #     '--name=%s' % "most_common_visitor",
@@ -42,8 +42,8 @@ import os
 # ])
 
 
-PyInstaller.__main__.run([
-    '--name=%s' % "search_visitor",
-    '--windowed',
-    "search_visitor.py"
-])
+# PyInstaller.__main__.run([
+#     '--name=%s' % "search_visitor",
+#     '--windowed',
+#     "search_visitor.py"
+# ])
