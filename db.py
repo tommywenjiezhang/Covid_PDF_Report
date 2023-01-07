@@ -15,6 +15,7 @@ from model import Testing, VisitorTesting
 from sqlalchemy.orm import sessionmaker
 import traceback
 from sqlalchemy import and_
+from fuzzywuzzy import process
 
 # from sendEmail import send_email
 
@@ -146,10 +147,19 @@ class Testingdb(BaseDB):
         df["duplicated"] = df.duplicated(subset=["first_name", "last_name"],keep=False).map({True:'Yes', False:'No'})
         df = df[df["duplicated"] == "Yes"].sort_values(by=["last_name","first_name"])
         return df
+    
+    def lookup_vistor(self, visitor_name, start_date:datetime, end_date:datetime):
+        df = self.getWeeklyStatsData(start_date, end_date)
+        df = df.loc[df["Category"] == "VISITOR"]
+        visitor_list = df["visitorName"].to_list()
+        visitor_lookup = process.extract(visitor_name, visitor_list, limit=1)
+        logging.info("looking up vistor {}".format(visitor_lookup[0][0]))
+        result = df.loc[df["visitorName"] == visitor_lookup[0][0] ] 
+        return result.reset_index(drop=True)
 
 
-    def get_most_common_visitor(self):
-        start_date = datetime.now() - timedelta(weeks=100)
+    def get_most_common_visitor(self,weeks=100):
+        start_date = datetime.now() - timedelta(weeks= weeks)
         end_date = datetime.now()
         qry_start_date = "#{}#".format(start_date.strftime("%Y-%m-%d %H:%M:%S"))
         qry_end_date = "#{}#".format(end_date.strftime("%Y-%m-%d %H:%M:%S"))
@@ -165,6 +175,16 @@ class Testingdb(BaseDB):
         combin_df = most_common.merge(visitor_df, how="inner", on="visitorName")
         combin_df =  combin_df[["last_name","first_name","visitorName", "visitorDOB"]].drop_duplicates(subset="visitorName")
         return combin_df
+    
+    def search_visitor(self,visitor_name):
+        visitor_df = self.get_most_common_visitor(20)
+        visitor_list = visitor_df["visitorName"].to_list()
+        visitor_lookup = process.extract(visitor_name, visitor_list, limit=1)
+        logging.debug(" Searching for {}".format(visitor_lookup[0][0] ))
+        result = visitor_df.loc[visitor_df["visitorName"] == visitor_lookup[0][0] ]
+        result[ "visitorDOB"] = pd.to_datetime(result[ "visitorDOB"]).dt.strftime("%m/%d/%Y")
+        return result.iloc[0].values
+
 
 
 
@@ -283,10 +303,5 @@ class ResidentDB(BaseDB):
         
 
 if __name__ == "__main__":
-    rdb = ResidentDB("ResidentDb.accdb")
-    start_date = datetime.strptime("12/01/2022", "%m/%d/%Y")
-    end_date = datetime.strptime("01/05/2023", "%m/%d/%Y")
-    df = rdb.getWeeklyResidentTesting(start_date, end_date)
-    print(df.wings.value_counts().index)
-    
+    pass
     

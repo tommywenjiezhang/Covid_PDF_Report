@@ -1,7 +1,11 @@
 from datetime import datetime, timedelta
 from db import Testingdb, ResidentDB
 from helper import makeFolder, copyActiveTestingToCurr, main_dir
+<<<<<<< HEAD
 from ReportFomatter import EmployeeReportFormatter, MissingReportFormatter, DailyReportFormatter, WeeklyReportFormatter, ResidentFormatter
+=======
+from ReportFomatter import EmployeeReportFormatter, MissingReportFormatter, DailyReportFormatter, WeeklyReportFormatter, VisitorReportFormatter
+>>>>>>> 862c25c16ce4c02f2bebd45182ae93cd0a5a68a8
 from parse_input import parse_args
 import os, sys
 import warnings
