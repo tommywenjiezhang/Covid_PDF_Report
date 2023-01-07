@@ -1,0 +1,144 @@
+{# templates/ResidentTestingTemplate.html #}
+
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<style>
+		<!--
+		/* Font Definitions */
+		@font-face {
+			font-family: "MS Gothic";
+			panose-1: 2 11 6 9 7 2 5 8 2 4;
+		}
+
+		@font-face {
+			font-family: "Cambria Math";
+			panose-1: 2 4 5 3 5 4 6 3 2 4;
+		}
+
+		@font-face {
+			font-family: Calibri;
+			panose-1: 2 15 5 2 2 2 4 3 2 4;
+		}
+
+		@font-face {
+			font-family: "\@MS Gothic";
+			panose-1: 2 11 6 9 7 2 5 8 2 4;
+		}
+
+		/* Style Definitions */
+		p.MsoNormal,
+		li.MsoNormal,
+		div.MsoNormal {
+			margin-top: 0in;
+			margin-right: 0in;
+			margin-bottom: 8.0pt;
+			margin-left: 0in;
+			line-height: 107%;
+			font-size: 11.0pt;
+			font-family: "Calibri", sans-serif;
+		}
+
+		.MsoChpDefault {
+			font-family: "Calibri", sans-serif;
+		}
+
+		.MsoPapDefault {
+			margin-bottom: 8.0pt;
+			line-height: 107%;
+		}
+
+		@page WordSection1 {
+			size: 8.5in 11.0in;
+			margin: 1.0in 1.0in 1.0in 1.0in;
+		}
+
+		div.WordSection1 {
+			page: WordSection1;
+		}
+		-->
+	</style>
+
+</head>
+
+<body lang=EN-US style='word-wrap:break-word'>
+	<div class=WordSection1>
+
+		<p class=MsoNormal align=center style='text-align:center'><span style='font-size:12.0pt;line-height:107%'>NEW
+				JERSEY VETERAN MEMORIAL HOME AT
+				MENLO PARK</span></p>
+
+		<p class=MsoNormal align=center style='text-align:center'><span
+				style='font-size:12.0pt;line-height:107%'>Covid-19 Rapid Antigen Test</span></p>
+
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>Resident
+				Name: </span><u><span style='font-size:12.0pt;line-height:107%'>{{ resident.name}}{{whitespaces}}</span></u></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>Date: </span><u><span
+					style='font-size:12.0pt;line-height:107%'>{{resident.testDate}}{{whitespaces}}</span></u></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>&nbsp;</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>Test: </span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'><span
+					style='font-family:"MS Gothic"'>{% if resident.TestKind == "BinaxNow" %}&#9746;{% else %}&#9744;{% endif %}</span> BinaxNow</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'><span
+					style='font-family:"MS Gothic"'>{% if resident.TestKind == "QuickVue" %}&#9746;{% else %}&#9744;{% endif %}</span> QuickVue</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>Lot# </span><u><span
+					style='font-size:12.0pt;line-height:107%'>{{resident.lotNumber}}{{whitespaces}}</span></u><span
+				style='font-size:12.0pt;line-height:107%'>Expiration Date: </span><u><span
+					style='font-size:12.0pt;line-height:107%'>{{resident.expirationDate}}{{whitespaces}}</span></u></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>&nbsp;</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>Reason for
+				Test:</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'><span
+					style='font-family:"MS Gothic"'>{% if resident.testReason == "Routine" %}&#9746;{% else %}&#9744;{% endif %}</span>Routine</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'><span
+					style='font-family:"MS Gothic"'>{% if resident.testReason == "New Admit/Readmit" %}&#9746;{% else %}&#9744;{% endif %}</span>New Admit/Readmit</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'><span
+					style='font-family:"MS Gothic"'>{% if resident.testReason == "Post-Exposure" %}&#9746;{% else %}&#9744;{% endif %}</span>Post-Exposure</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'><span
+					style='font-family:"MS Gothic"'>{% if resident.testReason == "Symptoms" %}&#9746;{% else %}&#9744;{% endif %}</span>Symptoms</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>&nbsp;</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>Result:</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'><span
+					style='font-family:"MS Gothic"'>{% if resident.result == "P" %}&#9746;{% else %}&#9744;{% endif %}</span>Positive</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'><span
+					style='font-family:"MS Gothic"'>{% if resident.result == "N" %}&#9746;{% else %}&#9744;{% endif %}</span>Negative</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>&nbsp;</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>Tester Name:
+				<u>{{whitespaces}}</u></span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>&nbsp;</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>Tester
+				Signature: </span><u>{{whitespaces}}</u></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>&nbsp;</span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'> </span></p>
+
+		<p class=MsoNormal><span style='font-size:12.0pt;line-height:107%'>&nbsp;</span></p>
+
+	</div>
+</body>
+
+</html>

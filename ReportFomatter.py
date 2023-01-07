@@ -457,7 +457,7 @@ class ResidentFormatter(BaseFormatter):
             return self.body
         else:
             self.df = validate_resident_df(self.df)
-            record_table_html = split_resident_by_wing(df)
+            record_table_html = split_resident_by_wing(self.df)
             positve_html = self._format_table(self.positive_test())
             record_table_html = positve_html + self._format_table(record_table_html)
             self.body += record_table_html
@@ -510,7 +510,7 @@ if __name__ == "__main__":
     from db import ResidentDB
     rdb = ResidentDB("ResidentDb.accdb")
     start_date = datetime.strptime("12/01/2022", "%m/%d/%Y")
-    end_date = datetime.strptime("01/06/2023", "%m/%d/%Y")
+    end_date = datetime.strptime("01/07/2023", "%m/%d/%Y")
     df = rdb.getWeeklyResidentTesting(start_date, end_date)
     formattter = ResidentFormatter(df)
     formattter.to_pdf("Resident Testing.pdf")

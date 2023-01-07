@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
-from db import Testingdb
+from db import Testingdb, ResidentDB
 from helper import makeFolder, copyActiveTestingToCurr, main_dir
-from ReportFomatter import EmployeeReportFormatter, MissingReportFormatter, DailyReportFormatter, WeeklyReportFormatter
+from ReportFomatter import EmployeeReportFormatter, MissingReportFormatter, DailyReportFormatter, WeeklyReportFormatter, ResidentFormatter
 from parse_input import parse_args
 import os, sys
 import warnings
@@ -99,6 +99,18 @@ if __name__ == "__main__":
                 ef.to_csv(xlsx_path)
             except Exception as ex:
                 logging.debug("EmpID Report {}".format(ex))
+                
+        elif args.resident:
+            logging.info("Resident Weekly Report {} - {}".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")))
+            subject = "{}-{} Resident Testing Report".format(start_date.strftime("%Y_%m_%d"), end_date.strftime("%Y_%m_%d"))
+            day_range = "{} - {}".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
+            pdf_path = get_pdf_path(folder_path, "Resident", day_range)
+            rdb = ResidentDB("ResidentDb.accdb")
+            resident_df = rdb.getWeeklyResidentTesting(start_date, end_date)
+            rformater = ResidentFormatter(resident_df,day_range)
+            rformater.to_pdf(pdf_path)
+            rformater.batch_html(os.path.join(folder_path, day_range +"_batch_export"))
+
         elif args.start == datetime.now().strftime("%m/%d/%Y"):
             today_date = datetime.now().strftime("%Y-%m-%d")
             subject = "{} Testing Report".format(today_date)
