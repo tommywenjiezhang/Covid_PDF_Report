@@ -1,20 +1,20 @@
 import PyInstaller.__main__
 import os
 
-# PyInstaller.__main__.run([
-#     '--name=%s' % "pdfReport",
-#     '--onefile',
-#     '--windowed',
-#     '--add-data=%s' % "./wkhtmltopdf.exe;.",
-#     "main.py"
-# ])
-
 PyInstaller.__main__.run([
-    '--name=%s' % "update_resident_test",
+    '--name=%s' % "pdfReport",
     '--onefile',
     '--windowed',
-    "update_resident.py"
+    '--add-data=%s' % "./wkhtmltopdf.exe;.",
+    "main.py"
 ])
+
+# PyInstaller.__main__.run([
+#     '--name=%s' % "update_resident_test",
+#     '--onefile',
+#     '--windowed',
+#     "update_resident.py"
+# ])
 
 # PyInstaller.__main__.run([
 #     '--name=%s' % "most_common_visitor",

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from db import Testingdb, ResidentDB
 from helper import makeFolder, copyActiveTestingToCurr, main_dir
-from ReportFomatter import EmployeeReportFormatter, MissingReportFormatter, DailyReportFormatter, WeeklyReportFormatter,ResidentFormatter
+from ReportFomatter import EmployeeReportFormatter, MissingReportFormatter, DailyReportFormatter, WeeklyReportFormatter,ResidentFormatter, VisitorReportFormatter
 from parse_input import parse_args
 import os, sys
 import warnings
@@ -99,6 +99,16 @@ if __name__ == "__main__":
                 ef.to_csv(xlsx_path)
             except Exception as ex:
                 logging.debug("EmpID Report {}".format(ex))
+        elif args.visitorName:
+            logging.info("Visitor Report Ran {} - {}".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")))
+            subject = "{}-{} Visitor Testing Report".format(start_date.strftime("%Y_%m_%d"), end_date.strftime("%Y_%m_%d"))
+            day_range = "{} - {}".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
+            pdf_path = get_pdf_path(folder_path, "Visitor", day_range)
+            xlsx_path = get_xlsx_path(folder_path, "Visitor " + args.visitorName.strip() ,day_range)
+            visitor_df = tdb.lookup_vistor(args.visitorName.strip(), start_date, end_date)
+            ef = VisitorReportFormatter(visitor_df, day_range)
+            ef.to_pdf(pdf_path)
+            ef.to_csv(xlsx_path)
         elif args.resident:
             logging.info("Resident Report {} - {}".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")))
             subject = "{}-{} Resident Testing Report".format(start_date.strftime("%Y_%m_%d"), end_date.strftime("%Y_%m_%d"))
