@@ -69,10 +69,12 @@ if __name__ == "__main__":
                 missingft = MissingReportFormatter(missing_df, day_range)
                 missingft.set_heading("Missing")
                 subject = "{}-{} Missing Testing Report Audit".format(start_date.strftime("%Y_%m_%d"), end_date.strftime("%Y_%m_%d"))
-                missingft.memo_body(memo_df).to_pdf(pdf_path)
+                missingft.memo_body(memo_df)
+                missingft.to_pdf(pdf_path)
                 missingft.to_csv(xlsx_path)
                 # convert_pdf(pdf_path, report_html)
             except Exception as e:
+                print(e)
                 logging.error("Missing Report No active testing error {}".format(e))
                 traceback.print_exc()
                 showMessage("error")

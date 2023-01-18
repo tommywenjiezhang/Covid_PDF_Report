@@ -349,7 +349,7 @@ class MissingReportFormatter(BaseFormatter):
             df = df[df["empName"] != "Total Tests"]
             record_table_html = df.to_html()
             record_table_html = self._format_table(record_table_html)
-            self.memo_html = "The following employees missed covid tests for the period {}".format(self.report_date)  + record_table_html
+            self.memo_html = "<h3> The following employees missed covid tests for the period {}</h3>".format(self.report_date)  + record_table_html
             return self
         else:
             df = self.df.loc[self.df["no test"] != 0].reset_index()["empName"]
@@ -361,8 +361,9 @@ class MissingReportFormatter(BaseFormatter):
             memo = combin_df[["empID", "empName","Title", "MEMO"]]
             memo.index += 1
             memo_html= memo.to_html()
-            self.memo_html =  "The following employees missed covid tests for the period {}".format(self.report_date)  +  self._format_table(memo_html)
-            return self
+            self.memo_html =  "<h3> The following employees missed covid tests for the period {} </h3>".format(self.report_date)  +  self._format_table(memo_html)
+            
+            return self.memo_html
 
     def pivot(self):
         return self.df
@@ -389,7 +390,7 @@ class MissingReportFormatter(BaseFormatter):
             return table_html
 
     def combine_html(self):
-        return self.heading + self.detail_records() + "<br/><p> Auto-generated testing report for {} </p>".format(datetime.now().strftime("%m/%d/%Y %H:%M:%S"))
+        return self.heading + self.detail_records() +  self.memo_html + "<br/><p> Auto-generated testing report for {} </p>".format(datetime.now().strftime("%m/%d/%Y %H:%M:%S"))
 
 
 class VisitorReportFormatter(BaseFormatter):
