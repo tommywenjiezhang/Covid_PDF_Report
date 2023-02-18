@@ -24,3 +24,18 @@ class VisitorTesting(Base):
     typeOfTest = Column(String(10), nullable=False)
     result = Column(String(2))
     symptom = Column(Boolean)
+
+class ResidentTesting(Base):
+    """ResidentTesting db"""
+    __tablename__ = "resident_testing"
+    id = Column(Integer, primary_key=True, autoincrement="auto")
+    ResidentID = Column(String(10), nullable=False)
+    residentName = Column(Text, nullable=False)
+    wings = Column(String(10), nullable=False)
+    timeTested = Column(DateTime, nullable = False)
+    lotNumber = Column(Text)
+    expirationDate = Column(DateTime)
+    TestKind = Column(Text)
+    testReason =  Column(Text)
+    result = Column(String(2))
+    symptom = Column(Boolean)

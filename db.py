@@ -11,10 +11,11 @@ import difflib
 import logging
 import sqlalchemy as sa
 from sqlalchemy.sql import text
-from model import Testing, VisitorTesting
+from model import Testing, VisitorTesting, ResidentTesting
 from sqlalchemy.orm import sessionmaker
 import traceback
 from sqlalchemy import and_
+from fuzzywuzzy import process
 
 # from sendEmail import send_email
 
@@ -26,17 +27,15 @@ def fuzzy_match(x, vect):
         return None
 
 
-class Testingdb():
-    def __init__(self):
+class BaseDB():
+    def __init__(self, dbname = "Testingdb.accdb"):
         access_driver = r'Microsoft Access Driver (*.mdb, *.accdb)'
-        print(access_driver)
         home_dir = os.environ['USERPROFILE']
-        self.dbPath = os.path.join(home_dir,"Desktop\Testingdb.accdb")
-        
+        self.dbPath = os.path.join(home_dir,"Desktop", dbname)
+            
         db_path = os.path.abspath(self.dbPath)
         if not os.path.exists(db_path):
             print(db_path + "does not exist")
-        print(db_path)
         connection_string = (
             r'Driver={' + access_driver + r'};'
             r'DBQ=' + db_path + r';'
@@ -46,20 +45,24 @@ class Testingdb():
                 "access+pyodbc",
                 query={"odbc_connect": connection_string}
         )
-        print(connection_url)
         
         try:
-
             engine = sa.create_engine(connection_url)
             self.conn = engine
             Session = sessionmaker(bind=engine)
             self.session = Session()
-            logging.debug("Database connection established, driver used{}".format(access_driver))
+            logging.debug("Database connection established, driver used {}".format(access_driver))
         except Exception as e:
             logging.error("DATABASE CONNECTION NOT SUCCESSFUL")
             logging.error(connection_url)
             logging.error(e, exc_info=True)
 
+
+
+
+
+
+class Testingdb(BaseDB):
     def getTodayStatsData(self):
         today_date = "#{}#".format(datetime.now().strftime("%Y-%m-%d"))
         emp_qry = "Select empList.empID, empList.empName, empList.DOB, \
@@ -89,12 +92,15 @@ class Testingdb():
         return combin_df
     
     def _updatePosTesting(self, empIDs,timeTested:datetime, result:str):
-        for empID in empIDs:
-            statement = self.session.query(Testing).\
-                        filter(Testing.empID == empID, Testing.timeTested >= timeTested).\
-                        update({"result":result})
-            logging.debug("Update {} positive records".format(statement))
-            self.session.commit()
+        if len(empIDs) > 0:
+            for empID in empIDs:
+                statement = self.session.query(Testing).\
+                            filter(Testing.empID == empID, Testing.timeTested >= timeTested).\
+                            update({"result":result})
+                logging.debug("Update {} positive records".format(statement))
+                self.session.commit()
+        else:
+            pass
 
     def _updateNegTesting(self,timeTested:datetime, result:str):
         # for empID in empIDs:
@@ -106,19 +112,23 @@ class Testingdb():
     
     def updateVisitorTesting(self,vistors, timeTested):
         timeTested = datetime.strptime(timeTested, "%m/%d/%Y")
-        self.session.query(VisitorTesting).\
+        statement =  self.session.query(VisitorTesting).\
                     filter(VisitorTesting.timeTested >= timeTested).\
                     update({"result":"N"})
         self.session.commit()
-        for i in range(len(vistors)-1):
-            visitorName = vistors[i]
-            print(visitorName)
-            self.session.query(VisitorTesting).\
-                filter(and_(VisitorTesting.timeTested >= timeTested,
-                        VisitorTesting.visitorName == visitorName)).\
-                update({"result":"P"})
+        logging.debug("updated {} records".format(statement))
+        if len(vistors) > 0:
+            for v in vistors:
+                visitorName = v
+                statement  =self.session.query(VisitorTesting).\
+                    filter(and_(VisitorTesting.timeTested >= timeTested,
+                            VisitorTesting.visitorName == visitorName)).\
+                    update({"result":"P"})
+                logging.debug("Update {}".format(v))
             self.session.commit()
-        
+            logging.debug("updated {} records".format(statement))
+        else:
+            pass
 
 
 
@@ -137,10 +147,19 @@ class Testingdb():
         df["duplicated"] = df.duplicated(subset=["first_name", "last_name"],keep=False).map({True:'Yes', False:'No'})
         df = df[df["duplicated"] == "Yes"].sort_values(by=["last_name","first_name"])
         return df
+    
+    def lookup_vistor(self, visitor_name, start_date:datetime, end_date:datetime):
+        df = self.getWeeklyStatsData(start_date, end_date)
+        df = df.loc[df["Category"] == "VISITOR"]
+        visitor_list = df["visitorName"].to_list()
+        visitor_lookup = process.extract(visitor_name, visitor_list, limit=1)
+        logging.info("looking up vistor {}".format(visitor_lookup[0][0]))
+        result = df.loc[df["visitorName"] == visitor_lookup[0][0] ] 
+        return result.reset_index(drop=True)
 
 
-    def get_most_common_visitor(self):
-        start_date = datetime.now() - timedelta(weeks=100)
+    def get_most_common_visitor(self,weeks=100):
+        start_date = datetime.now() - timedelta(weeks= weeks)
         end_date = datetime.now()
         qry_start_date = "#{}#".format(start_date.strftime("%Y-%m-%d %H:%M:%S"))
         qry_end_date = "#{}#".format(end_date.strftime("%Y-%m-%d %H:%M:%S"))
@@ -156,12 +175,23 @@ class Testingdb():
         combin_df = most_common.merge(visitor_df, how="inner", on="visitorName")
         combin_df =  combin_df[["last_name","first_name","visitorName", "visitorDOB"]].drop_duplicates(subset="visitorName")
         return combin_df
+    
+    def search_visitor(self,visitor_name):
+        visitor_df = self.get_most_common_visitor(20)
+        visitor_list = visitor_df["visitorName"].to_list()
+        visitor_lookup = process.extract(visitor_name, visitor_list, limit=1)
+        logging.debug(" Searching for {}".format(visitor_lookup[0][0] ))
+        result = visitor_df.loc[visitor_df["visitorName"] == visitor_lookup[0][0] ]
+        result[ "visitorDOB"] = pd.to_datetime(result[ "visitorDOB"]).dt.strftime("%m/%d/%Y")
+        return result.iloc[0].values
+
 
 
 
     def getMissingTests(self, start_date:datetime, end_date:datetime):
         qry_start_date = "#{}#".format(start_date.strftime("%Y-%m-%d %H:%M:%S"))
         qry_end_date = "#{}#".format(end_date.strftime("%Y-%m-%d %H:%M:%S"))
+        logging.debug( "Missing Testing {}-{}".format(qry_start_date,qry_end_date))
         emp_qry = "Select empList.empID, empList.empName, empList.DOB,t.timeTested,t.typeOfTest, t.result from empList left join (Select Testing.empID, Testing.timeTested,Testing.typeOfTest, Testing.result FROM Testing where Testing.timeTested >= {} and Testing.timeTested <= {}) AS t ON empList.empID = t.empID order by t.timeTested asc".format(qry_start_date, qry_end_date)
         emp_df = pd.read_sql(emp_qry, self.conn)
         week_day_category = ["Sunday","Monday", "Tuesday"\
@@ -195,9 +225,9 @@ class Testingdb():
 
 
     def getCustomDayRange(self,date_lst):
+        logging.debug("Custom Report {}".format(date_lst))
         min_date = min(date_lst)
         max_date = max(date_lst)
-        print(min_date, max_date)
         max_date += timedelta(hours=23)
         empList_df = self.getEmpList()
         date_str_lst = [datetime.strftime(c,"%m/%d/%Y") for c in date_lst]
@@ -210,16 +240,14 @@ class Testingdb():
         return merge_df
 
 
-
-
     
     def getWeeklyStatsData(self, start_date:datetime, end_date:datetime):
         qry_start_date = "#{}#".format(start_date.strftime("%Y-%m-%d %H:%M:%S"))
         qry_end_date = "#{}#".format(end_date.strftime("%Y-%m-%d %H:%M:%S"))
+        logging.debug( "Weely Testing {}-{}".format(qry_start_date,qry_end_date))
         emp_qry = "Select empList.empID, empList.empName, empList.DOB, Testing.timeTested, Testing.typeOfTest, Testing.result from  empList \
                   left JOIN Testing ON empList.empID = Testing.empID where Testing.timeTested >= {} and Testing.timeTested <= {} order by Testing.timeTested asc".format(qry_start_date, qry_end_date)
         vistor_qry = "select * from visitorTesting where timeTested >= {} and timeTested <= {}".format(qry_start_date,qry_end_date)
-        print(emp_qry)
         emp_df = pd.read_sql(emp_qry, self.conn)
         emp_df["Category"] = "EMPLOYEE"
         visitor_df = pd.read_sql(vistor_qry,self.conn)
@@ -231,21 +259,11 @@ class Testingdb():
         combined_df["timeTested"]= pd.to_datetime(combined_df["timeTested"])
         return combined_df
 
-class Emaildb():
-    def __init__(self):
-        home_dir = os.environ['USERPROFILE']
-        self.dbPath = os.path.join(home_dir,"Desktop\Emaildb.accdb")
-        access_driver = [d for d in pyodbc.drivers() if "Access" in d]
-        print(access_driver)
-        print(self.dbPath)
-        connection_str = r'Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + self.dbPath
-        print(connection_str)
-        self.conn = pyodbc.connect(connection_str)
-
+class Emaildb(BaseDB):
     def get_subscribers(self):
         qry = "SELECT * FROM subscribers where subscribed <> 0"
         sub_df = pd.read_sql(qry, self.conn)
-        subscribers_lst = list(sub_df[["subscriber_email","is_phone_number"]].itertuples(index= False))
+        subscribers_lst = sub_df[["subscriber_email","is_phone_number"]].values.transpose()
         return subscribers_lst
 
     def update_subscriber_email(self,old_email, new_email):
@@ -269,19 +287,45 @@ class MessageDB():
         messages = pd.read_sql(qry, self.conn)
         return messages
 
+class ResidentDB(BaseDB):
+    def getWeeklyResidentTesting(self,start_date:datetime, end_date:datetime):
+        qry_start_date = "#{}#".format(start_date.strftime("%Y-%m-%d %H:%M:%S"))
+        qry_end_date = "#{}#".format(end_date.strftime("%Y-%m-%d %H:%M:%S"))
+        logging.debug("Weekly Test for Resident {} - {}".format(qry_start_date, qry_end_date))
+        statement = "select * from qry_testing where timeTested >= {} and timeTested <= {} order by timeTested asc".format(qry_start_date,qry_end_date)
+        resident_df = pd.read_sql(statement, self.conn)
+        resident_df["result"].replace("", None, inplace=True)
+        resident_df["wings"] = resident_df["wings"].str.strip()
+        resident_df["result"].fillna("N", inplace=True)
+        resident_df["timeTested"]= pd.to_datetime(resident_df["timeTested"])
+        return resident_df
+
+    def _updatePosTesting(self, residentIDS,timeTested:datetime, result:str):
+        if len(residentIDS) > 0:
+            for ResidentID in residentIDS:
+                statement = self.session.query(ResidentTesting).\
+                            filter(ResidentTesting.ResidentID == ResidentID, ResidentTesting.timeTested >= timeTested).\
+                            update({"result":result})
+                logging.debug("Update {} positive records".format(statement))
+                self.session.commit()
+        else:
+            pass
+
+    def _updateNegTesting(self,timeTested:datetime, result:str):
+        # for empID in empIDs:
+        statement = self.session.query(ResidentTesting).\
+                    filter(ResidentTesting.timeTested >= timeTested).\
+                    update({"result":result})
+        logging.debug("Update {} negative records".format(statement))
+        self.session.commit()
+
+    def updateTesting(self, timeTested, pos=[]):
+        timeTested = datetime.strptime(timeTested, "%m/%d/%Y")
+        self._updateNegTesting(timeTested, "N")
+        if len(pos) > 0:
+            self._updatePosTesting(pos,timeTested, "P")
+        
 
 if __name__ == "__main__":
-    # t = Testingdb()
-    # df  = t.getTodayStatsData()
-    s = Testingdb()
-    # df = s.get_duplicated_employee()
-    # # # print(df.loc[df["no test"] != 0].reset_index()["empName"].to_frame())
-    # df.to_excel("duplicated_employee.xlsx", index=None)
-    # most_common = s.get_most_common_visitor()
-    # most_common.to_excel("most_common_visitor.xlsx", index=None)
-    todaysDate = datetime.now().strftime("%m/%d/%Y")
-    s.updateVisitorTesting(["HOLLY,TAYLOR","JOHN,LIVESY"], ["P", "N"], todaysDate)
-
-
-    
+    pass
     
